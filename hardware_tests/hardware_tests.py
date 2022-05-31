@@ -39,7 +39,7 @@ for x in imports:
         print("Error importing ", x)
 '''
 
-"""
+
 # NVM register numbers
     # TODO: confirm registers start in MRAM partition & update board build file
 _FLAG     = const(20)
@@ -47,7 +47,6 @@ _DWNLINK  = const(4)
 _DCOUNT   = const(3)
 _RSTERRS  = const(2)
 _BOOTCNT  = const(0)
-"""
 
 class Satellite:
     # Define NVM flags
@@ -183,8 +182,6 @@ class Satellite:
         except Exception as e:
             print('[ERROR][H-Bridges]',e)
 
-    # all hardware initializations are in the init function; comment out all other functions
-    """
     def reinit(self,dev):
         dev=dev.lower()
         if dev=='radio':
@@ -433,4 +430,3 @@ class Satellite:
         burnwire.deinit()
         self._relayA.drive_mode=digitalio.DriveMode.OPEN_DRAIN
         return self._deployA
-    """
