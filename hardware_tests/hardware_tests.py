@@ -164,7 +164,7 @@ class Satellite:
             print('[ERROR][Sun Sensors]',e)
 
         try:
-            burnwire = pulseio.PWMOut(board.BURN, frequency=1000, duty_cycle=0)
+            burnwire = pulseio.PWMOut(board.BURN1, frequency=1000, duty_cycle=0)
             self.hardware['BurnWire'] = True
         except Exception as e:
             print('[ERROR][Burn Wire IC]', e)
