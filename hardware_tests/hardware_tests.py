@@ -18,7 +18,7 @@ import busio, time, json
 import digitalio
 import analogio
 import storage, sys
-import pulseio, neopixel
+import pulseio, neopixel, pwmio
 import bmx160
 import drv8830
 from os import listdir, stat, statvfs, mkdir
@@ -164,7 +164,7 @@ class Satellite:
             print('[ERROR][Sun Sensors]',e)
 
         try:
-            burnwire = pulseio.PWMOut(board.BURN1, frequency=1000, duty_cycle=0)
+            burnwire = pwmio.PWMOut(board.BURN1, frequency=1000, duty_cycle=0)
             self.hardware['BurnWire'] = True
         except Exception as e:
             print('[ERROR][Burn Wire IC]', e)
@@ -406,27 +406,27 @@ class Satellite:
         del data[0]
         data.append(item)
 
-    def burn(self,burn_num,dutycycle=0,freq=1000,duration=1):
+    def burn(self,burn_num,dutycycle,freq=1000,duration):
         # BURN1=-Y,BURN2=+Y,dutycycle ~0.13%
         dtycycl=int((dutycycle/100)*(0xFFFF))
         print('----- BURN WIRE CONFIGURATION -----')
         print('\tFrequency of: {}Hz\n\tDuty cycle of: {}% (int:{})\n\tDuration of {}sec'.format(freq,(100*dtycycl/0xFFFF),dtycycl,duration))
         if '1' in burn_num:
-            burnwire = pulseio.PWMOut(board.BURN1, frequency=freq, duty_cycle=0)
+            burnwire = pwmio.PWMOut(board.BURN1, frequency=freq, duty_cycle=0)
         elif '2' in burn_num:
-            burnwire = pulseio.PWMOut(board.BURN2, frequency=freq, duty_cycle=0)
+            burnwire = pwmio.PWMOut(board.BURN2, frequency=freq, duty_cycle=0)
         else:
             return False
-        self._relayA.drive_mode=digitalio.DriveMode.PUSH_PULL
-        self._relayA.value = 1
-        self.RGB=(255,0,0)
-        time.sleep(0.5)
+        # self._relayA.drive_mode=digitalio.DriveMode.PUSH_PULL
+        # self._relayA.value = 1
+        # self.RGB=(255,0,0)
+        # time.sleep(0.5)
         burnwire.duty_cycle=dtycycl
         time.sleep(duration)
-        self._relayA.value = 0
+        # self._relayA.value = 0
         burnwire.duty_cycle=0
-        self.RGB=(0,0,0)
+        # self.RGB=(0,0,0)
         self._deployA = True
         burnwire.deinit()
-        self._relayA.drive_mode=digitalio.DriveMode.OPEN_DRAIN
+        # self._relayA.drive_mode=digitalio.DriveMode.OPEN_DRAIN
         return self._deployA
