@@ -1,11 +1,8 @@
-# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
-# SPDX-License-Identifier: MIT
-
-# Simple demo of sending and recieving data with the RFM95 LoRa radio.
-# Author: Tony DiCola
 import board
 import busio
 import digitalio
+import config
+import binascii
 
 import adafruit_rfm9x
 
@@ -49,31 +46,26 @@ while True:
     prompt = input('~>')
     if prompt[0] == 'r':
         packet = rfm9x.receive(timeout=5.0)
-        # Optionally change the receive timeout from its default of 0.5 seconds:
-        # packet = rfm9x.receive(timeout=5.0)
-        # If no packet was received during the timeout then None is returned.
         if packet is None:
-            # Packet has not been received
             LED.value = False
             print("Received nothing!")
         else:
-            # Received a packet!
             LED.value = True
-            # Print out the raw bytes of the packet:
-            print("Received (raw bytes): {0}".format(packet))
-            # And decode to ASCII text and print it too.  Note that you always
-            # receive raw bytes and need to convert to a text format like ASCII
-            # if you intend to do string processing on your data.  Make sure the
-            # sending side is sending ASCII data before you try to decode!
+            print(f"Received (raw bytes): {packet}")
             packet_text = str(packet, "ascii")
-            print("Received (ASCII): {0}".format(packet_text))
-            # Also read the RSSI (signal strength) of the last received message and
-            # print it.
+            print(f"Received (ASCII): {packet_text}")
             rssi = rfm9x.last_rssi
-            print("Received signal strength: {0} dB".format(rssi))
-    elif len(prompt) == 1 and prompt[0] == 'w':
+            print(f"Received signal strength: {rssi} dB")
+    elif len(prompt) == 1 and prompt[0] == 't':
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
-    elif len(prompt) >= 2 and prompt[0:2] == 'ws':  # Write with secret code
+    elif len(prompt) >= 2 and prompt[0:2] == 'ts':  # Transmit with secret code
         what = input('message=')
-        rfm9x.send(b'p\xba\xb8C'+bytes(what, "utf-8"))
+        rfm9x.send(config.secret_code+bytes(what, "utf-8"))
+    elif len(prompt) >= 2 and prompt[0:2] == 'tc':  # Transmit command
+        firstbyte = binascii.unhexlify(input("first byte="))
+        secondbyte = binascii.unhexlify(input("first byte="))
+        arguments = input('arguments=')
+        msg = config.secret_code+firstbyte+secondbyte+bytes(arguments, "utf-8")
+        print(f'sending {msg}')
+        rfm9x.send(msg)
