@@ -44,7 +44,7 @@ rfm9x.tx_power = 23
 
 while True:
     prompt = input('~>')
-    if prompt[0] == 'r':
+    if prompt == 'r':
         packet = rfm9x.receive(timeout=5.0)
         if packet is None:
             LED.value = False
@@ -56,6 +56,17 @@ while True:
             print(f"Received (ASCII): {packet_text}")
             rssi = rfm9x.last_rssi
             print(f"Received signal strength: {rssi} dB")
+    elif prompt == 'rl': # Recieve on a loop
+        print('Listening for packets...')
+        while True:
+            packet = rfm9x.receive()
+            if packet is not None:
+                LED.value = True
+                print(f'Received (raw bytes): {packet}')
+                packet_text = str(packet, "ascii")
+                print(f"Received (ASCII): {packet_text}")
+                rssi = rfm9x.last_rssi
+                print(f"Received signal strength: {rssi} dB")
     elif len(prompt) == 1 and prompt[0] == 't':
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
@@ -64,7 +75,7 @@ while True:
         rfm9x.send(config.secret_code+bytes(what, "utf-8"))
     elif len(prompt) >= 2 and prompt[0:2] == 'tc':  # Transmit command
         firstbyte = binascii.unhexlify(input("first byte="))
-        secondbyte = binascii.unhexlify(input("first byte="))
+        secondbyte = binascii.unhexlify(input("second byte="))
         arguments = input('arguments=')
         msg = config.secret_code+firstbyte+secondbyte+bytes(arguments, "utf-8")
         print(f'sending {msg}')
