@@ -42,10 +42,14 @@ rfm9x.tx_power = 23
 # call will wait for the previous one to finish before continuing.
 # rfm9x.send(bytes("Hello world!\r\n", "utf-8"))
 
+# set node/destination
+rfm9x.node = 0xBA
+rfm9x.destination = 0xAB
+
 while True:
     prompt = input('~>')
     if prompt == 'r':
-        packet = rfm9x.receive(timeout=5.0)
+        packet = rfm9x.receive(timeout=5.0, with_ack=True)
         if packet is None:
             LED.value = False
             print("Received nothing!")
@@ -59,14 +63,12 @@ while True:
     elif prompt == 'rl': # Recieve on a loop
         print('Listening for packets...')
         while True:
-            packet = rfm9x.receive()
+            packet = rfm9x.receive(with_ack=True, with_header=True)
             if packet is not None:
                 LED.value = True
-                print(f'Received (raw bytes): {packet}')
-                packet_text = str(packet, "ascii")
-                print(f"Received (ASCII): {packet_text}")
-                rssi = rfm9x.last_rssi
-                print(f"Received signal strength: {rssi} dB")
+                print("Received (raw header):", [hex(x) for x in packet[0:4]])
+                print("Received (raw payload): {0}".format(packet[4:]))
+                print(f"Received RSSI: {rfm9x.last_rssi}")
     elif len(prompt) == 1 and prompt[0] == 't':
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
