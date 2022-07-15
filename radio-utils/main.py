@@ -68,7 +68,22 @@ while True:
                 LED.value = True
                 print("Received (raw header):", [hex(x) for x in packet[0:4]])
                 print("Received (raw payload): {0}".format(packet[4:]))
+                print(f"length: {len(packet)}")
                 print(f"Received RSSI: {rfm9x.last_rssi}")
+    elif prompt == 'radio_test':
+        msg = ''
+        while True:
+            packet = rfm9x.receive(with_ack=True, with_header=True)
+            if packet is not None:
+                LED.value = True
+                chunk = str(packet[5:], "ascii")
+                print("Received (raw header):", [hex(x) for x in packet[0:5]])
+                print(f"Received (raw payload): {chunk}")
+                print(f"length: {len(packet)}")
+                print(f"Received RSSI: {rfm9x.last_rssi}")
+                if packet[4] == 0xff:
+                    msg += chunk
+                print(msg)
     elif len(prompt) == 1 and prompt[0] == 't':
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
