@@ -60,7 +60,7 @@ while True:
             print(f"Received (ASCII): {packet_text}")
             rssi = rfm9x.last_rssi
             print(f"Received signal strength: {rssi} dB")
-    elif prompt == 'rl': # Recieve on a loop
+    elif prompt == 'rl':  # Recieve on a loop
         print('Listening for packets...')
         while True:
             packet = rfm9x.receive(with_ack=True, with_header=True)
@@ -72,6 +72,7 @@ while True:
                 print(f"Received RSSI: {rfm9x.last_rssi}")
     elif prompt == 'radio_test':
         msg = ''
+        last = None
         while True:
             packet = rfm9x.receive(with_ack=True, with_header=True)
             if packet is not None:
@@ -82,18 +83,38 @@ while True:
                 print(f"length: {len(packet)}")
                 print(f"Received RSSI: {rfm9x.last_rssi}")
                 if packet[4] == 0xff:
+                    if last == chunk:
+                        print('Duplicate packet')
+                    else:
+                        msg += chunk
+                if packet[4] == 0xfe:
                     msg += chunk
-                print(msg)
+                    break
+        print('msg: ', msg)
+        if msg == config.test_message:
+            print("Sucessfully received large message!")
+        else:
+            print("Failed to receive large message!")
+        assert(msg == config.test_message)
     elif len(prompt) == 1 and prompt[0] == 't':
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
     elif len(prompt) >= 2 and prompt[0:2] == 'ts':  # Transmit with secret code
         what = input('message=')
         rfm9x.send(config.secret_code+bytes(what, "utf-8"))
-    elif len(prompt) >= 2 and prompt[0:2] == 'tc':  # Transmit command
+    elif prompt == 'tc':  # Transmit command
         firstbyte = binascii.unhexlify(input("first byte="))
         secondbyte = binascii.unhexlify(input("second byte="))
         arguments = input('arguments=')
         msg = config.secret_code+firstbyte+secondbyte+bytes(arguments, "utf-8")
         print(f'sending {msg}')
         rfm9x.send(msg)
+    elif prompt == 'tc?':  # Transmit particular command
+        print('1 (no-op)')
+        cmd_header = b'\x00'
+        if input('~~>') == '1':
+            msg =cmd_header+config.secret_code+b'\x8eb'
+            while not rfm9x.send_with_ack(msg):
+                print('Failed to send command')
+                pass
+            print('Sucesfully sent no-op')
