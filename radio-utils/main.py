@@ -5,7 +5,7 @@ import config
 import binascii
 import radio_headers as headers
 from radio_test import radio_test
-from utils import recieve, print_res
+from utils import receive, print_res
 
 import adafruit_rfm9x
 
@@ -52,11 +52,11 @@ rfm9x.destination = 0xAB
 while True:
     prompt = input('~>')
     if prompt == 'r':
-        print_res(recieve(rfm9x))
+        print_res(receive(rfm9x))
     elif prompt == 'rl':  # Recieve on a loop
         print('Listening for packets...')
         while True:
-            print_res(recieve(rfm9x))
+            print_res(receive(rfm9x))
     elif prompt == 'radio_test':
         radio_test(rfm9x, LED)
     elif len(prompt) == 1 and prompt[0] == 't':

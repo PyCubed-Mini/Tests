@@ -12,12 +12,13 @@ def radio_test(rfm9x, LED):
             chunk = str(packet[5:], "ascii")
 
             print("Received (raw header):", [hex(x) for x in packet[0:5]])
-            print(f"Received (raw payload): {chunk}")
-            print(f"length: {len(packet)}")
-            print(f"Received RSSI: {rfm9x.last_rssi}")
+            # print(f"Received (raw payload): {chunk}")
+            # print(f"length: {len(packet)}")
+            # print(f"Received RSSI: {rfm9x.last_rssi}")
 
             if header == headers.NAIVE_START:
-                msg = ''
+                msg = chunk
+                last = chunk
                 print("Starting receiving large message...")
             elif header == headers.NAIVE_MID:
                 if last == chunk:

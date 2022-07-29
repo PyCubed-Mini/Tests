@@ -1,4 +1,4 @@
-def received(rfm9x, with_ack=True):
+def receive(rfm9x, with_ack=True):
     """Recieve a packet.  Returns None if no packet was received.
     Otherwise returns (header, payload)"""
     packet = rfm9x.receive(with_ack=with_ack, with_header=True)
