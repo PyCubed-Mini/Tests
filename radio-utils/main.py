@@ -3,6 +3,9 @@ import busio
 import digitalio
 import config
 import binascii
+import radio_headers as headers
+from radio_test import radio_test
+from utils import recieve, print_res
 
 import adafruit_rfm9x
 
@@ -49,71 +52,34 @@ rfm9x.destination = 0xAB
 while True:
     prompt = input('~>')
     if prompt == 'r':
-        packet = rfm9x.receive(timeout=5.0, with_ack=True)
-        if packet is None:
-            LED.value = False
-            print("Received nothing!")
-        else:
-            LED.value = True
-            print(f"Received (raw bytes): {packet}")
-            packet_text = str(packet, "ascii")
-            print(f"Received (ASCII): {packet_text}")
-            rssi = rfm9x.last_rssi
-            print(f"Received signal strength: {rssi} dB")
+        print_res(recieve(rfm9x))
     elif prompt == 'rl':  # Recieve on a loop
         print('Listening for packets...')
         while True:
-            packet = rfm9x.receive(with_ack=True, with_header=True)
-            if packet is not None:
-                LED.value = True
-                print("Received (raw header):", [hex(x) for x in packet[0:4]])
-                print("Received (raw payload): {0}".format(packet[4:]))
-                print(f"length: {len(packet)}")
-                print(f"Received RSSI: {rfm9x.last_rssi}")
+            print_res(recieve(rfm9x))
     elif prompt == 'radio_test':
-        msg = ''
-        last = None
-        while True:
-            packet = rfm9x.receive(with_ack=True, with_header=True)
-            if packet is not None:
-                LED.value = True
-                chunk = str(packet[5:], "ascii")
-                print("Received (raw header):", [hex(x) for x in packet[0:5]])
-                print(f"Received (raw payload): {chunk}")
-                print(f"length: {len(packet)}")
-                print(f"Received RSSI: {rfm9x.last_rssi}")
-                if packet[4] == 0xff:
-                    if last == chunk:
-                        print('Duplicate packet')
-                    else:
-                        msg += chunk
-                if packet[4] == 0xfe:
-                    msg += chunk
-                    break
-        print('msg: ', msg)
-        if msg == config.test_message:
-            print("Sucessfully received large message!")
-        else:
-            print("Failed to receive large message!")
-        assert(msg == config.test_message)
+        radio_test(rfm9x, LED)
     elif len(prompt) == 1 and prompt[0] == 't':
+        firstbyte = binascii.unhexlify(input("header byte="))
         what = input('message=')
         rfm9x.send(bytes(what, "utf-8"))
     elif len(prompt) >= 2 and prompt[0:2] == 'ts':  # Transmit with secret code
         what = input('message=')
         rfm9x.send(config.secret_code+bytes(what, "utf-8"))
     elif prompt == 'tc':  # Transmit command
+        header = headers.DEFAULT
         firstbyte = binascii.unhexlify(input("first byte="))
         secondbyte = binascii.unhexlify(input("second byte="))
         arguments = input('arguments=')
-        msg = config.secret_code+firstbyte+secondbyte+bytes(arguments, "utf-8")
+        msg = header+config.secret_code+firstbyte + \
+            secondbyte+bytes(arguments, "utf-8")
         print(f'sending {msg}')
         rfm9x.send(msg)
     elif prompt == 'tc?':  # Transmit particular command
         print('1 (no-op)')
-        cmd_header = b'\x00'
+        cmd_header = config.DEFAULT
         if input('~~>') == '1':
-            msg =cmd_header+config.secret_code+b'\x8eb'
+            msg = header+cmd_header+config.secret_code+b'\x8eb'
             while not rfm9x.send_with_ack(msg):
                 print('Failed to send command')
                 pass
