@@ -1,5 +1,6 @@
 import radio_headers as headers
 import config as config
+from lib.naive import NaiveMessage
 
 def radio_test(rfm9x, LED):
     msg = ''
@@ -36,3 +37,20 @@ def radio_test(rfm9x, LED):
     else:
         print("Failed to receive large message!")
     assert(msg == config.test_message)
+
+    # Now transmit the large message back
+    msg = NaiveMessage(0, msg)
+    while not msg.done():
+        packet, with_ack = msg.packet()
+        debug_packet = str(packet)[:20] + "...." if len(packet) > 23 else packet
+        print(f"Sending packet: {debug_packet}")
+
+        if with_ack:
+            if rfm9x.send_with_ack(packet):
+                msg.ack()
+            else:
+                msg.no_ack()
+        else:
+            rfm9x.send(packet, keep_listening=True)
+
+    print("Message successfully sent!")
