@@ -1,6 +1,8 @@
 import radio_headers as headers
 import config as config
 from lib.naive import NaiveMessage
+import struct
+
 
 def radio_test(rfm9x, LED):
     msg = ''
@@ -10,17 +12,18 @@ def radio_test(rfm9x, LED):
         if packet is not None:
             LED.value = True
             header = packet[4]
-            chunk = str(packet[5:], "ascii")
 
             print("Received (raw header):", [hex(x) for x in packet[0:5]])
-            # print(f"Received (raw payload): {chunk}")
-            # print(f"length: {len(packet)}")
-            # print(f"Received RSSI: {rfm9x.last_rssi}")
 
+            if header == headers.DEFAULT:
+                print("unpacked: ", struct.unpack("f"*11, packet[5:]))
+                continue
+
+            chunk = str(packet[5:], "ascii")
             if header == headers.NAIVE_START:
                 msg = chunk
                 last = chunk
-                print("Starting receiving large message...")
+                print("Starting receiving large message...\n")
             elif header == headers.NAIVE_MID:
                 if last == chunk:
                     print('Duplicate packet')
@@ -33,16 +36,17 @@ def radio_test(rfm9x, LED):
     print('msg: ', msg)
 
     if msg == config.test_message:
-        print("Sucessfully received large message!")
+        print("Sucessfully received large message!\n")
     else:
-        print("Failed to receive large message!")
+        print("Failed to receive large message!\n")
     assert(msg == config.test_message)
 
     # Now transmit the large message back
     msg = NaiveMessage(0, msg)
     while not msg.done():
         packet, with_ack = msg.packet()
-        debug_packet = str(packet)[:20] + "...." if len(packet) > 23 else packet
+        debug_packet = str(packet)[:20] + \
+            "...." if len(packet) > 23 else packet
         print(f"Sending packet: {debug_packet}")
 
         if with_ack:
