@@ -77,9 +77,10 @@ while True:
         rfm9x.send(msg)
     elif prompt == 'tc?':  # Transmit particular command
         print('1 (no-op)')
-        cmd_header = config.DEFAULT
+        header = bytes([headers.COMMAND])
+        print(header, headers.COMMAND)
         if input('~~>') == '1':
-            msg = header+cmd_header+config.secret_code+b'\x8eb'
+            msg = header + config.secret_code + b'\x00\x00'
             while not rfm9x.send_with_ack(msg):
                 print('Failed to send command')
                 pass
