@@ -6,6 +6,7 @@ import binascii
 import radio_headers as headers
 from radio_test import radio_test
 from utils import receive, print_res
+from lib.command_map import commands
 
 import adafruit_rfm9x
 
@@ -76,12 +77,18 @@ while True:
         print(f'sending {msg}')
         rfm9x.send(msg)
     elif prompt == 'tc?':  # Transmit particular command
-        print('1 (no-op)')
-        header = bytes([headers.COMMAND])
-        print(header, headers.COMMAND)
-        if input('~~>') == '1':
-            msg = header + config.secret_code + b'\x00\x00'
-            while not rfm9x.send_with_ack(msg):
-                print('Failed to send command')
-                pass
-            print('Sucesfully sent no-op')
+        print(commands)
+        comand_bytes, will_respond = commands[input('command=')]
+        args = input('arguments=')
+        msg = bytes([headers.COMMAND]) + config.secret_code + comand_bytes + bytes(args, 'utf-8')
+        while not rfm9x.send_with_ack(msg):
+            print('Failed to send command')
+            pass
+        print('Successfully sent command')
+        if will_respond:
+            print('Awaiting response...')
+            while True:
+                res = receive(rfm9x)
+                if res:
+                    print_res(res)
+                    break

@@ -1,3 +1,5 @@
+import radio_headers as headers
+
 def receive(rfm9x, with_ack=True):
     """Recieve a packet.  Returns None if no packet was received.
     Otherwise returns (header, payload)"""
@@ -12,5 +14,8 @@ def print_res(res):
     else:
         header, payload = res
         print("Received (raw header):", [hex(x) for x in header])
-        packet_text = str(payload, "ascii")
-        print(f"length: {packet_text}")
+        if header[4] == headers.DEFAULT:
+            print('Received beacon')
+        else:
+            packet_text = str(payload, "utf-8")
+            print(packet_text)
