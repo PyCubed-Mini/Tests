@@ -5,7 +5,7 @@ import config
 import binascii
 import radio_headers as headers
 from radio_test import radio_test
-from utils import receive, print_res
+from utils import receive, print_res, smart_await_response
 from lib.command_map import commands
 
 import adafruit_rfm9x
@@ -86,9 +86,4 @@ while True:
             pass
         print('Successfully sent command')
         if will_respond:
-            print('Awaiting response...')
-            while True:
-                res = receive(rfm9x)
-                if res:
-                    print_res(res)
-                    break
+            smart_await_response(rfm9x)
