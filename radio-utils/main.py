@@ -64,9 +64,11 @@ while True:
 
             if with_ack:
                 if rfm9x.send_with_ack(packet):
+                    print('ack')
                     msg.ack()
                 else:
-                   msg.no_ack()
+                    print('no ack')
+                    msg.no_ack()
             else:
                 rfm9x.send(packet, keep_listening=True)
 
