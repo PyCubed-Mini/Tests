@@ -1,4 +1,4 @@
-import radio_headers as headers
+from radio_utils import headers
 
 
 def receive(rfm9x, with_ack=True):
@@ -30,7 +30,7 @@ class _data:
         self.cmsg = bytes([])
         self.cmsg_last = bytes([])
 
-def smart_await_response(rfm9x):
+def read_loop(rfm9x):
     data = _data()
 
     while True:
@@ -41,11 +41,12 @@ def smart_await_response(rfm9x):
         
         oh = header[4]
         if oh == headers.DEFAULT:
-            print('Received beacon <should decode beacon>')
+            print(payload)
         elif oh == headers.NAIVE_START or oh == headers.NAIVE_MID or oh == headers.NAIVE_END:
-            print('Naive')
+            print('Recieved Naive')
             handle_naive(oh, data, payload)
         elif oh == headers.CHUNK_START or oh == headers.CHUNK_MID or oh == headers.CHUNK_END:
+            print('Recieved chunk')
             handle_chunk(oh, data, payload)
 
 
