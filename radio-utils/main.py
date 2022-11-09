@@ -2,10 +2,10 @@ import board
 import busio
 import digitalio
 import config
-import binascii
-import radio_headers as headers
-from radio_test import radio_test
-from utils import receive, print_res
+from utils import read_loop
+from lib.command_map import commands
+from radio_utils.chunk import ChunkMessage
+from radio_utils import headers
 
 import adafruit_rfm9x
 
@@ -51,36 +51,42 @@ rfm9x.destination = 0xAB
 
 while True:
     prompt = input('~>')
-    if prompt == 'r':
-        print_res(receive(rfm9x))
-    elif prompt == 'rl':  # Recieve on a loop
-        print('Listening for packets...')
+    if prompt == 'rl' or prompt == 'read_loop':  # Recieve on a loop
+        read_loop(rfm9x)
+    elif prompt == 'uf' or prompt == 'upload_file':
+        path = input('path=')
+        msg = ChunkMessage(0, path)
         while True:
-            print_res(receive(rfm9x))
-    elif prompt == 'radio_test':
-        radio_test(rfm9x, LED)
-    elif len(prompt) == 1 and prompt[0] == 't':
-        firstbyte = binascii.unhexlify(input("header byte="))
-        what = input('message=')
-        rfm9x.send(bytes(what, "utf-8"))
-    elif len(prompt) >= 2 and prompt[0:2] == 'ts':  # Transmit with secret code
-        what = input('message=')
-        rfm9x.send(config.secret_code+bytes(what, "utf-8"))
-    elif prompt == 'tc':  # Transmit command
-        header = headers.DEFAULT
-        firstbyte = binascii.unhexlify(input("first byte="))
-        secondbyte = binascii.unhexlify(input("second byte="))
-        arguments = input('arguments=')
-        msg = header+config.secret_code+firstbyte + \
-            secondbyte+bytes(arguments, "utf-8")
-        print(f'sending {msg}')
-        rfm9x.send(msg)
-    elif prompt == 'tc?':  # Transmit particular command
-        print('1 (no-op)')
-        cmd_header = config.DEFAULT
-        if input('~~>') == '1':
-            msg = header+cmd_header+config.secret_code+b'\x8eb'
-            while not rfm9x.send_with_ack(msg):
-                print('Failed to send command')
-                pass
-            print('Sucesfully sent no-op')
+            packet, with_ack = msg.packet()
+
+            debug_packet = str(packet)[:20] + "...." if len(packet) > 23 else packet
+            print(f"Sending packet: {debug_packet}, with_ack: {with_ack}")
+
+            if with_ack:
+                if rfm9x.send_with_ack(packet):
+                    print('ack')
+                    msg.ack()
+                else:
+                    print('no ack')
+                    msg.no_ack()
+            else:
+                rfm9x.send(packet, keep_listening=True)
+
+            if msg.done():
+                break
+    elif prompt == 'c' or prompt == 'command':  # Transmit particular command
+        print(commands.keys())
+        comand_bytes, will_respond = commands[input('command=')]
+        args = input('arguments=')
+        msg = bytes([headers.COMMAND]) + config.secret_code + comand_bytes + bytes(args, 'utf-8')
+        while not rfm9x.send_with_ack(msg):
+            print('Failed to send command')
+            pass
+        print('Successfully sent command')
+        if will_respond:
+            read_loop(rfm9x)
+    elif prompt == 'h' or prompt == 'help':
+        print('rl: read_loop')
+        print('uf: upload_file')
+        print('c: command')
+        print('h: help')
