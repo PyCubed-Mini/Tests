@@ -12,14 +12,15 @@ normal = '\033[0m'
 red = '\033[31m'
 green = '\033[32m'
 yellow = '\033[33m'
+blue = '\033[34m'
 
 # test messages
 msg_1 = f"{bold}{yellow}111:{normal} A satellite or artificial satellite is an object intentionally placed into orbit in outer space."
-msg_2 = f"{bold}{green}222:{normal} Except for passive satellites, most satellites have an electricity generation system for equipment on board, such as solar panels or radioisotope thermoelectric generators (RTGs)."
+msg_2 = f"{bold}{blue}222:{normal} Except for passive satellites, most satellites have an electricity generation system for equipment on board, such as solar panels or radioisotope thermoelectric generators (RTGs)."
 msg_3 = f"{bold}{yellow}333:{normal} Most satellites also have a method of communication to ground stations, called transponders."
-msg_4 = f"{bold}{green}444:{normal} Many satellites use a standardized bus to save cost and work, the most popular of which is small CubeSats."
+msg_4 = f"{bold}{blue}444:{normal} Many satellites use a standardized bus to save cost and work, the most popular of which is small CubeSats."
 msg_5 = f"{bold}{yellow}555:{normal} Similar satellites can work together as a group, forming constellations."
-msg_6 = f"{bold}{green}666:{normal} Because of the high launch cost to space, satellites are designed to be as lightweight and robust as possible."
+msg_6 = f"{bold}{blue}666:{normal} Because of the high launch cost to space, satellites are designed to be as lightweight and robust as possible."
 msg_7 = f"{bold}{yellow}777:{normal} Most communication satellites are radio relay stations in orbit and carry dozens of transponders, each with a bandwidth of tens of megahertz."
 
 messages = [msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7]
@@ -97,7 +98,6 @@ if mode_str == "r":
         msg = rfm9x.receive(with_ack=ack)
         if msg is not None:
             print(msg.decode("utf-8"))
-            print(f"\n{yellow}Receiving...{normal}")
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
