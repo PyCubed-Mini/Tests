@@ -92,10 +92,10 @@ else:
         if ack_str == "y":
             if rfm9x.send_with_ack(bytes_msg):
                 print(
-                    f"Message {bold}{i}{normal}: {green}Acknowledged{normal}")
+                    f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
             else:
                 print(
-                    f"Message {bold}{i}{normal}: {red}No acknowledge{normal}")
-    else:
-        rfm9x.send(bytes_msg)
-        print(f"Message {bold}{i}{normal}: Sent")
+                    f"Message {bold}{i+1}{normal}: {red}No acknowledge{normal}")
+        else:
+            rfm9x.send(bytes_msg)
+            print(f"Message {bold}{i+1}{normal}: Sent")
