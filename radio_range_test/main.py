@@ -11,6 +11,7 @@ bold = '\033[1m'
 normal = '\033[0m'
 red = '\033[31m'
 green = '\033[32m'
+yellow = '\033[33m'
 
 # test messages
 msg_1 = f"{bold}{red}111:{normal} A satellite or artificial satellite is an object intentionally placed into orbit in outer space."
@@ -32,7 +33,7 @@ def get_input(prompt_str, choice_values):
     return choice
 
 
-print(f"{bold}Radio Range Test{normal}")
+print(f"\n{bold}{yellow}Radio Range Test{normal}")
 
 board_str = get_input(
     f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
@@ -43,11 +44,20 @@ if board_str == "s":
     # pocketqube
     CS = digitalio.DigitalInOut(board.RF_CS)
     RESET = digitalio.DigitalInOut(board.RF_RST)
+    CS.switch_to_output(value=True)
+    RESET.switch_to_output(value=True)
+
+    radio_DIO0 = digitalio.DigitalInOut(board.RF_IO0)
+    radio_DIO0.switch_to_input()
+    radio_DIO1 = digitalio.DigitalInOut(board.RF_IO1)
+    radio_DIO1.switch_to_input()
+
     print(f"{bold}{green}Satellite{normal} selected")
 elif board_str == "f":
     # feather
     CS = digitalio.DigitalInOut(board.D5)
     RESET = digitalio.DigitalInOut(board.D6)
+    raise ValueError("Need to switch to output")
     print(f"{bold}{green}Feather{normal} selected")
 else:  # board_str == "r"
     # raspberry pi
@@ -61,6 +71,8 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
 rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
+if board_str == "s":
+    rfm9x.dio0 = radio_DIO0
 
 # power - default is 13 dB, can go up to 23
 rfm9x.tx_power = 23
@@ -77,14 +89,20 @@ ack = (ack_str == "y")
 
 if mode_str == "r":
     print(f"{bold}Receive{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
+    rfm9x.node = 0xAB  # our ID
+    rfm9x.destination = 0xBA  # target's ID
 
+    print("\n{yellow}Receiving...{normal}")
     while True:
         msg = rfm9x.receive(with_ack=ack)
         if msg is not None:
             print(msg.decode("utf-8"))
+            print("\n{yellow}Receiving...{normal}")
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
+    rfm9x.node = 0xBA  # our ID
+    rfm9x.destination = 0xAB  # target's ID
 
     for i, msg in enumerate(messages):
         bytes_msg = bytes(msg, "utf-8")
