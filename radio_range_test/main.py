@@ -54,7 +54,7 @@ else:  # board_str == "r"
     # raspberry pi
     CS = digitalio.DigitalInOut(board.CE1)
     RESET = digitalio.DigitalInOut(board.D25)
-    print("{bold}{green}Raspberry Pi{normal} selected")
+    print(f"{bold}{green}Raspberry Pi{normal} selected")
 
 # Initialize SPI bus.
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
@@ -65,7 +65,7 @@ rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
 
 # power - default is 13 dB, can go up to 23
 rfm9x.tx_power = 23
-print(f"\nPower = {rfm9x.tx_power} dB")
+print(f"\nPower = {rfm9x.tx_power} dBm")
 
 mode_str = get_input(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
