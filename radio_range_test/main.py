@@ -3,8 +3,7 @@ import board
 import busio
 import digitalio
 import lib.adafruit_rfm9x as adafruit_rfm9x
-import sys
-sys.path.append("../")
+import time
 
 
 # print formatters
@@ -99,3 +98,4 @@ else:
         else:
             rfm9x.send(bytes_msg)
             print(f"Message {bold}{i+1}{normal}: Sent")
+        time.sleep(0.1*(i+1))
