@@ -33,7 +33,7 @@ def get_input(prompt_str, choice_values):
     return choice
 
 
-print(f"{bold} Radio Range Test - {green}Receiver{normal}")
+print(f"{bold}Radio Range Test{normal}")
 
 board_str = get_input(
     f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
@@ -82,20 +82,20 @@ if mode_str == "r":
     while True:
         msg = rfm9x.receive(with_ack=ack)
         if msg is not None:
-            print(msg)
+            print(msg.decode("utf-8"))
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
 
-    if ack_str == "y":
-        for i, msg in enumerate(messages):
-            if rfm9x.send_with_ack(msg):
+    for i, msg in enumerate(messages):
+        bytes_msg = bytes(msg, "utf-8")
+        if ack_str == "y":
+            if rfm9x.send_with_ack(bytes_msg):
                 print(
                     f"Message {bold}{i}{normal}: {green}Acknowledged{normal}")
             else:
                 print(
                     f"Message {bold}{i}{normal}: {red}No acknowledge{normal}")
     else:
-        for i, msg in enumerate(messages):
-            rfm9x.send(msg)
-            print(f"Message {bold}{i}{normal}: Sent")
+        rfm9x.send(bytes_msg)
+        print(f"Message {bold}{i}{normal}: Sent")
