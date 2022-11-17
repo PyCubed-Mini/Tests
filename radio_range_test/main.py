@@ -29,12 +29,35 @@ messages = [msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7]
 def get_input(prompt_str, choice_values):
     print(prompt_str)
     choice = None
+
+    choice_values_str = "("
+    for i, _ in enumerate(choice_values):
+        choice_values_str += f"{choice_values[i]}"
+        if i < len(choice_values) - 1:
+            choice_values_str += ", "
+    choice_values_str += ")"
+
     while choice not in choice_values:
-        choice = input(f"{choice_values} ~> ").lower()
+        choice = input(f"{choice_values_str} ~> ").lower()
     return choice
 
 
-print(f"\n{bold}{yellow}Radio Range Test{normal}")
+def set_param_from_input(param, prompt_str, choice_values, allow_default=False):
+
+    # add "enter" as a choice
+    choice_values = [""] + choice_values if allow_default else choice_values
+    prompt_str = prompt_str + \
+        " (enter to skip):" if allow_default else prompt_str
+
+    choice = get_input(prompt_str, choice_values)
+
+    if choice == "":
+        return param
+    else:
+        return int(choice)
+
+
+print(f"\n{bold}{yellow}Radio Range Test{normal}\n")
 
 board_str = get_input(
     f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
@@ -58,7 +81,10 @@ elif board_str == "f":
     # feather
     CS = digitalio.DigitalInOut(board.D5)
     RESET = digitalio.DigitalInOut(board.D6)
-    raise ValueError("Need to switch to output")
+    CS.switch_to_output(value=True)
+    RESET.switch_to_output(value=True)
+
+    raise ValueError("Feather: untested")
     print(f"{bold}{green}Feather{normal} selected")
 else:  # board_str == "r"
     # raspberry pi
@@ -75,9 +101,33 @@ rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
 if board_str == "s":
     rfm9x.dio0 = radio_DIO0
 
+# RFM radio configuration
+
 # power - default is 13 dB, can go up to 23
+param_str = get_input(
+    f"Change radio parameters? {bold}(y/n){normal}", ["y", "n"])
+
+# start by setting the defaults
 rfm9x.tx_power = 23
-print(f"\nPower = {rfm9x.tx_power} dBm")
+rfm9x.signal_bandwidth = rfm9x.bw_bins[2]
+rfm9x.spreading_factor = 12
+rfm9x.coding_rate = 5
+
+if param_str == "y":
+    rfm9x.tx_power = set_param_from_input(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
+                                          [f"{i}" for i in range(5, 24)], allow_default=True)
+    rfm9x.signal_bandwidth = set_param_from_input(rfm9x.signal_bandwidth, f"Bandwidth (currently {rfm9x.signal_bandwidth} Hz)",
+                                                  [f"{rfm9x.bw_bins[i]}" for i in range(len(rfm9x.bw_bins))], allow_default=True)
+    rfm9x.spreading_factor = set_param_from_input(rfm9x.spreading_factor, f"Spreading Factor (currently {rfm9x.spreading_factor})",
+                                                  [f"{i}" for i in range(7, 13)], allow_default=True)
+    rfm9x.coding_rate = set_param_from_input(rfm9x.coding_rate, f"Coding Rate (currently {rfm9x.coding_rate})",
+                                             [f"{i}" for i in range(5, 9)], allow_default=True)
+
+print(f"{yellow}{bold}Radio Parameters:{normal}")
+print(f"\tPower = {rfm9x.tx_power} dBm")
+print(f"\tBandwidth = {rfm9x.signal_bandwidth} Hz")
+print(f"\tSpreading Factor = {rfm9x.spreading_factor}")
+print(f"\tCoding Rate = {rfm9x.coding_rate}")
 
 mode_str = get_input(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
@@ -104,16 +154,22 @@ else:
     rfm9x.node = 0xBA  # our ID
     rfm9x.destination = 0xAB  # target's ID
 
-    for i, msg in enumerate(messages):
-        bytes_msg = bytes(msg, "utf-8")
-        if ack_str == "y":
-            if rfm9x.send_with_ack(bytes_msg):
-                print(
-                    f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
+    while True:
+        for i, msg in enumerate(messages):
+            bytes_msg = bytes(msg, "utf-8")
+            if ack_str == "y":
+                if rfm9x.send_with_ack(bytes_msg):
+                    print(
+                        f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
+                else:
+                    print(
+                        f"Message {bold}{i+1}{normal}: {red}No acknowledge{normal}")
             else:
-                print(
-                    f"Message {bold}{i+1}{normal}: {red}No acknowledge{normal}")
-        else:
-            rfm9x.send(bytes_msg)
-            print(f"Message {bold}{i+1}{normal}: Sent")
-        time.sleep(0.1*(i+1))
+                rfm9x.send(bytes_msg)
+                print(f"Message {bold}{i+1}{normal}: Sent")
+            time.sleep(0.1*(i+1))
+
+        repeat_str = get_input(
+            f"Repeat transmission? {bold}(y/n){normal}", ["y", "n"])
+        if repeat_str == "n":
+            break
