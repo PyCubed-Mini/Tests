@@ -147,7 +147,8 @@ if mode_str == "r":
     while True:
         msg = rfm9x.receive(with_ack=ack)
         if msg is not None:
-            print(msg.decode("utf-8"))
+            print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr})\t" +
+                  msg.decode("utf-8"))
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
