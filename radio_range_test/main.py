@@ -156,7 +156,7 @@ rfm9x.spreading_factor = 12
 rfm9x.coding_rate = 5
 
 if param_str == "y":
-    rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} dB)",
+    rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
                                                      [240.0, 960.0], allow_default=True)
     rfm9x.tx_power = set_param_from_input_discrete(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
                                                    [f"{i}" for i in range(5, 24)], allow_default=True)

@@ -790,7 +790,7 @@ class RFM9x:
         return got_ack
 
     def receive(
-        self, *, keep_listening=True, with_header=False, with_ack=False, timeout=None
+        self, *, keep_listening=True, with_header=False, with_ack=False, timeout=None, debug=False
     ):
         """Wait to receive a packet from the receiver. If a packet is found the payload bytes
         are returned, otherwise None is returned (which indicates the timeout elapsed with no
@@ -839,6 +839,8 @@ class RFM9x:
         self.idle()
         if not timed_out:
             if self.enable_crc and self.crc_error():
+                if debug:
+                    print("RFM9X: CRC Error")
                 self.crc_error_count += 1
             else:
                 # Read the data from the FIFO.
@@ -856,6 +858,9 @@ class RFM9x:
                 # Clear interrupt.
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
                 if fifo_length < 5:
+                    if debug:
+                        print(
+                            f"RFM9X: Incomplete message (fifo_length = {fifo_length} < 5)")
                     packet = None
                 else:
                     if (
@@ -863,6 +868,9 @@ class RFM9x:
                         and packet[0] != _RH_BROADCAST_ADDRESS
                         and packet[0] != self.node
                     ):
+                        if debug:
+                            print(
+                                f"RFM9X: Incorrect Address (packet address = {packet[0]} != my address = {self.node}")
                         packet = None
                     # send ACK unless this was an ACK or a broadcast
                     elif (
@@ -885,6 +893,8 @@ class RFM9x:
                         if (self.seen_ids[packet[1]] == packet[2]) and (
                             packet[3] & _RH_FLAGS_RETRY
                         ):
+                            if debug:
+                                print(f"RFM9X: dropping retried packet")
                             packet = None
                         else:  # save the packet identifier for this source
                             self.seen_ids[packet[1]] = packet[2]
