@@ -26,7 +26,7 @@ msg_7 = f"{bold}{yellow}777:{normal} Most communication satellites are radio rel
 messages = [msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7]
 
 
-def get_input(prompt_str, choice_values):
+def get_input_discrete(prompt_str, choice_values):
     print(prompt_str)
     choice = None
 
@@ -42,14 +42,14 @@ def get_input(prompt_str, choice_values):
     return choice
 
 
-def set_param_from_input(param, prompt_str, choice_values, allow_default=False):
+def set_param_from_input_discrete(param, prompt_str, choice_values, allow_default=False):
 
     # add "enter" as a choice
     choice_values = [""] + choice_values if allow_default else choice_values
     prompt_str = prompt_str + \
         " (enter to skip):" if allow_default else prompt_str
 
-    choice = get_input(prompt_str, choice_values)
+    choice = get_input_discrete(prompt_str, choice_values)
 
     if choice == "":
         return param
@@ -57,9 +57,50 @@ def set_param_from_input(param, prompt_str, choice_values, allow_default=False):
         return int(choice)
 
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def get_input_range(prompt_str, choice_range):
+    print(prompt_str)
+    choice = None
+
+    choice_range_str = f"({choice_range[0]} - {choice_range[1]})"
+
+    while True:
+        choice = input(f"{choice_range_str} ~> ").lower()
+        if choice == "":
+            break
+
+        if not is_number(choice):
+            continue
+
+        if float(choice) > choice_range[0] and float(choice) < choice_range[1]:
+            break
+    return choice
+
+
+def set_param_from_input_range(param, prompt_str, choice_range, allow_default=False):
+
+    # add "enter" as a choice
+    prompt_str = prompt_str + \
+        " (enter to skip):" if allow_default else prompt_str
+
+    choice = get_input_range(prompt_str, choice_range)
+
+    if choice == "":
+        return param
+    else:
+        return float(choice)
+
+
 print(f"\n{bold}{yellow}Radio Range Test{normal}\n")
 
-board_str = get_input(
+board_str = get_input_discrete(
     f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
     ["s", "f", "r"]
 )
@@ -104,36 +145,40 @@ if board_str == "s":
 # RFM radio configuration
 
 # power - default is 13 dB, can go up to 23
-param_str = get_input(
+param_str = get_input_discrete(
     f"Change radio parameters? {bold}(y/n){normal}", ["y", "n"])
 
 # start by setting the defaults
+rfm9x.frequency_mhz = 433.0
 rfm9x.tx_power = 23
 rfm9x.signal_bandwidth = rfm9x.bw_bins[2]
 rfm9x.spreading_factor = 12
 rfm9x.coding_rate = 5
 
 if param_str == "y":
-    rfm9x.tx_power = set_param_from_input(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
-                                          [f"{i}" for i in range(5, 24)], allow_default=True)
-    rfm9x.signal_bandwidth = set_param_from_input(rfm9x.signal_bandwidth, f"Bandwidth (currently {rfm9x.signal_bandwidth} Hz)",
-                                                  [f"{rfm9x.bw_bins[i]}" for i in range(len(rfm9x.bw_bins))], allow_default=True)
-    rfm9x.spreading_factor = set_param_from_input(rfm9x.spreading_factor, f"Spreading Factor (currently {rfm9x.spreading_factor})",
-                                                  [f"{i}" for i in range(7, 13)], allow_default=True)
-    rfm9x.coding_rate = set_param_from_input(rfm9x.coding_rate, f"Coding Rate (currently {rfm9x.coding_rate})",
-                                             [f"{i}" for i in range(5, 9)], allow_default=True)
+    rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} dB)",
+                                                     [240.0, 960.0], allow_default=True)
+    rfm9x.tx_power = set_param_from_input_discrete(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
+                                                   [f"{i}" for i in range(5, 24)], allow_default=True)
+    rfm9x.signal_bandwidth = set_param_from_input_discrete(rfm9x.signal_bandwidth, f"Bandwidth (currently {rfm9x.signal_bandwidth} Hz)",
+                                                           [f"{rfm9x.bw_bins[i]}" for i in range(len(rfm9x.bw_bins))], allow_default=True)
+    rfm9x.spreading_factor = set_param_from_input_discrete(rfm9x.spreading_factor, f"Spreading Factor (currently {rfm9x.spreading_factor})",
+                                                           [f"{i}" for i in range(7, 13)], allow_default=True)
+    rfm9x.coding_rate = set_param_from_input_discrete(rfm9x.coding_rate, f"Coding Rate (currently {rfm9x.coding_rate})",
+                                                      [f"{i}" for i in range(5, 9)], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
+print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
 print(f"\tPower = {rfm9x.tx_power} dBm")
 print(f"\tBandwidth = {rfm9x.signal_bandwidth} Hz")
 print(f"\tSpreading Factor = {rfm9x.spreading_factor}")
 print(f"\tCoding Rate = {rfm9x.coding_rate}")
 
-mode_str = get_input(
+mode_str = get_input_discrete(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
     ["r", "t"])
 
-ack_str = get_input(
+ack_str = get_input_discrete(
     f"Acknowledge? {bold}(y/n){normal}", ["y", "n"])
 
 ack = (ack_str == "y")
@@ -170,7 +215,7 @@ else:
                 print(f"Message {bold}{i+1}{normal}: Sent")
             time.sleep(0.1*(i+1))
 
-        repeat_str = get_input(
+        repeat_str = get_input_discrete(
             f"Repeat transmission? {bold}(y/n){normal}", ["y", "n"])
         if repeat_str == "n":
             break
