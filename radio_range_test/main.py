@@ -190,7 +190,7 @@ if mode_str == "r":
 
     print(f"\n{yellow}Receiving...{normal}")
     while True:
-        msg = rfm9x.receive(with_ack=ack)
+        msg = rfm9x.receive(with_ack=ack, debug=True)
         if msg is not None:
             print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr})\t" +
                   msg.decode("utf-8"))
