@@ -213,7 +213,7 @@ else:
             else:
                 rfm9x.send(bytes_msg)
                 print(f"Message {bold}{i+1}{normal}: Sent")
-            time.sleep(0.1*(i+1))
+            time.sleep(0.5*(i+1))
 
         repeat_str = get_input_discrete(
             f"Repeat transmission? {bold}(y/n){normal}", ["y", "n"])
