@@ -67,6 +67,10 @@ _RH_RF95_REG_24_HOP_PERIOD = const(0x24)
 _RH_RF95_REG_25_FIFO_RX_BYTE_ADDR = const(0x25)
 _RH_RF95_REG_26_MODEM_CONFIG3 = const(0x26)
 
+_RH_RF95_REG_28_FREQ_ERR_MSB = const(0x28)
+_RH_RF95_REG_29_FREQ_ERR_MID = const(0x29)
+_RH_RF95_REG_2A_FREQ_ERR_LSB = const(0x2A)
+
 _RH_RF95_REG_40_DIO_MAPPING1 = const(0x40)
 _RH_RF95_REG_41_DIO_MAPPING2 = const(0x41)
 _RH_RF95_REG_42_VERSION = const(0x42)
@@ -236,6 +240,8 @@ class RFM9x:
     )
 
     lna_boost_hf = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=0, bits=2)
+
+    lna_gain = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=5, bits=3)
 
     auto_ifon = _RegisterBits(_RH_RF95_DETECTION_OPTIMIZE, offset=7, bits=1)
 
@@ -479,6 +485,21 @@ class RFM9x:
         self._write_u8(_RH_RF95_REG_06_FRF_MSB, msb)
         self._write_u8(_RH_RF95_REG_07_FRF_MID, mid)
         self._write_u8(_RH_RF95_REG_08_FRF_LSB, lsb)
+
+    @property
+    def frequency_error(self):
+        """
+        The frequency error 
+        """
+        msb = self._read_u8(_RH_RF95_REG_28_FREQ_ERR_MSB)
+        mid = self._read_u8(_RH_RF95_REG_29_FREQ_ERR_MID)
+        lsb = self._read_u8(_RH_RF95_REG_2A_FREQ_ERR_LSB)
+
+        bw_khz = self.signal_bandwidth / 1000.0
+
+        fei_value = ((msb << 16) | (mid << 8) | (lsb)) & 0xFFFFFF
+        f_error = ((fei_value * (2 ^ 24)) / _RH_RF95_FXOSC) * (bw_khz / 500)
+        return f_error
 
     @property
     def tx_power(self):

@@ -151,8 +151,8 @@ param_str = get_input_discrete(
 # start by setting the defaults
 rfm9x.frequency_mhz = 433.0
 rfm9x.tx_power = 23
-rfm9x.signal_bandwidth = rfm9x.bw_bins[2]
-rfm9x.spreading_factor = 12
+rfm9x.signal_bandwidth = rfm9x.bw_bins[7]
+rfm9x.spreading_factor = 7
 rfm9x.coding_rate = 5
 
 if param_str == "y":
@@ -166,6 +166,10 @@ if param_str == "y":
                                                            [f"{i}" for i in range(7, 13)], allow_default=True)
     rfm9x.coding_rate = set_param_from_input_discrete(rfm9x.coding_rate, f"Coding Rate (currently {rfm9x.coding_rate})",
                                                       [f"{i}" for i in range(5, 9)], allow_default=True)
+    rfm9x.low_datarate_optimize = set_param_from_input_discrete(rfm9x.low_datarate_optimize, f"Low Datarate Optimization (currently {rfm9x.low_datarate_optimize})",
+                                                                ["0", "1"], allow_default=True)
+    rfm9x.lna_gain = set_param_from_input_discrete(rfm9x.lna_gain, f"LNA Gain - [max = 1, min = 6] (currently {rfm9x.lna_gain})",
+                                                   [f"{i}" for i in range(1, 7)], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
@@ -192,7 +196,7 @@ if mode_str == "r":
     while True:
         msg = rfm9x.receive(with_ack=ack, debug=True)
         if msg is not None:
-            print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr})\t" +
+            print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr} | FEI: {rfm9x.frequency_error})\t" +
                   msg.decode("utf-8"))
 
 else:
