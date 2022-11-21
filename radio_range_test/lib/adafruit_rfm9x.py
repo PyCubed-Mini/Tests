@@ -133,6 +133,13 @@ def ticks_diff(ticks1, ticks2):
     return diff
 
 
+def twos_comp(val, bits):
+    """compute the 2's complement of int value val"""
+    if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+        val = val - (1 << bits)        # compute negative value
+    return val                         # return positive value as is
+
+
 class RFM9x:
     """Interface to a RFM95/6/7/8 LoRa radio module.  Allows sending and
     receivng bytes of data in long range LoRa mode at a support board frequency
@@ -497,7 +504,10 @@ class RFM9x:
 
         bw_khz = self.signal_bandwidth / 1000.0
 
-        fei_value = ((msb << 16) | (mid << 8) | (lsb)) & 0xFFFFFF
+        print(f"msb = {msb}")
+
+        fei_value = twos_comp(
+            ((msb << 16) | (mid << 8) | (lsb)) & 0xFFFFFF, 20)
         f_error = ((fei_value * (2 ^ 24)) / _RH_RF95_FXOSC) * (bw_khz / 500)
         return f_error
 

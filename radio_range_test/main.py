@@ -177,6 +177,8 @@ print(f"\tPower = {rfm9x.tx_power} dBm")
 print(f"\tBandwidth = {rfm9x.signal_bandwidth} Hz")
 print(f"\tSpreading Factor = {rfm9x.spreading_factor}")
 print(f"\tCoding Rate = {rfm9x.coding_rate}")
+print(f"\tLow Datarate Optimization = {rfm9x.low_datarate_optimize}")
+print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
 
 mode_str = get_input_discrete(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
