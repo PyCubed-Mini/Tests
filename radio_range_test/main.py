@@ -154,6 +154,8 @@ rfm9x.tx_power = 23
 rfm9x.signal_bandwidth = rfm9x.bw_bins[7]
 rfm9x.spreading_factor = 7
 rfm9x.coding_rate = 5
+timeout = rfm9x.receive_timeout
+rfm9x.preamble_length = 16
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
@@ -170,6 +172,8 @@ if param_str == "y":
                                                                 ["0", "1"], allow_default=True)
     rfm9x.lna_gain = set_param_from_input_discrete(rfm9x.lna_gain, f"LNA Gain - [max = 1, min = 6] (currently {rfm9x.lna_gain})",
                                                    [f"{i}" for i in range(1, 7)], allow_default=True)
+    timeout = set_param_from_input_range(timeout, f"Timeout (currently {timeout} s)",
+                                         [0.0, 1000.0], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
@@ -179,6 +183,8 @@ print(f"\tSpreading Factor = {rfm9x.spreading_factor}")
 print(f"\tCoding Rate = {rfm9x.coding_rate}")
 print(f"\tLow Datarate Optimization = {rfm9x.low_datarate_optimize}")
 print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
+print(f"\tTimeout = {timeout} s")
+print(f"\tPreamble Length = {rfm9x.preamble_length} s")
 
 mode_str = get_input_discrete(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
@@ -196,7 +202,7 @@ if mode_str == "r":
 
     print(f"\n{yellow}Receiving...{normal}")
     while True:
-        msg = rfm9x.receive(with_ack=ack, debug=True)
+        msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
         if msg is not None:
             print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr} | FEI: {rfm9x.frequency_error})\t" +
                   msg.decode("utf-8"))
