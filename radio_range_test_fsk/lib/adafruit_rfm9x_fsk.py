@@ -178,8 +178,8 @@ def twos_comp(val, bits):
 
 
 class RFM9x:
-    """Interface to a RFM95/6/7/8 LoRa radio module.  Allows sending and
-    receivng bytes of data in long range LoRa mode at a support board frequency
+    """Interface to a RFM95/6/7/8 radio module.  Allows sending and
+    receiving bytes of data in FSK mode at a supported board frequency
     (433/915mhz).
 
     You must specify the following parameters:
@@ -277,22 +277,12 @@ class RFM9x:
     dio0_mapping = _RegisterBits(
         _RH_RF95_REG_40_DIO_MAPPING1, offset=6, bits=2)
 
-    auto_agc = _RegisterBits(_RH_RF95_REG_26_MODEM_CONFIG3, offset=2, bits=1)
-
-    low_datarate_optimize = _RegisterBits(
-        _RH_RF95_REG_26_MODEM_CONFIG3, offset=3, bits=1
-    )
-
     lna_boost_hf = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=0, bits=2)
 
     lna_gain = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=5, bits=3)
 
-    auto_ifon = _RegisterBits(_RH_RF95_DETECTION_OPTIMIZE, offset=7, bits=1)
-
-    detection_optimize = _RegisterBits(
-        _RH_RF95_DETECTION_OPTIMIZE, offset=0, bits=3)
-
-    bw_bins = (7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000)
+    # ???
+    auto_agc = _RegisterBits(_RH_RF95_REG_26_MODEM_CONFIG3, offset=2, bits=1)
 
     def __init__(
         self,
@@ -338,12 +328,11 @@ class RFM9x:
         # clear default setting for access to LF registers if frequency > 525MHz
         if frequency > 525:
             self.low_frequency_mode = 0
+        else:
+            self.low_frequency_mode = 1
+
         # Set modulation type to FSK
         self.modulation_type = 0x00
-
-        # Setup entire 256 byte FIFO
-        self._write_u8(_RH_RF95_REG_0E_FIFO_TX_BASE_ADDR, 0x00)
-        self._write_u8(_RH_RF95_REG_0F_FIFO_RX_BASE_ADDR, 0x00)
 
         # Set mode idle
         self.idle()
@@ -535,6 +524,31 @@ class RFM9x:
         self._write_u8(_RH_RF95_REG_08_FRF_LSB, lsb)
 
     @property
+    def bitrate(self):
+        msb = self._read_u8(_RH_RF95_REG_02_BITRATE_MSB)
+        lsb = self._read_u8(_RH_RF95_REG_03_BITRATE_LSB)
+        frac = self._read_u8(_RH_RF95_REG_5D_BITRATE_FRAC) & 0x0F
+
+        int_part = ((msb << 8) | lsb) & 0xFFFF
+
+        br = _RH_RF95_FXOSC / (int_part + (frac / 16))
+
+        return br
+
+    @bitrate.setter
+    def bitrate(self, val):
+        br = _RH_RF95_FXOSC / val
+        int_part = int(br)
+        frac_part = int(16 * (br % 1)) & 0x0F
+
+        msb = (int_part >> 8) & 0xFF
+        lsb = int_part & 0xFF
+
+        self._write_u8(_RH_RF95_REG_02_BITRATE_MSB, msb)
+        self._write_u8(_RH_RF95_REG_03_BITRATE_LSB, lsb)
+        self._write_u8(_RH_RF95_REG_5D_BITRATE_FRAC, frac_part)
+
+    @property
     def frequency_error(self):
         """
         The frequency error 
@@ -612,103 +626,6 @@ class RFM9x:
         if snr_byte > 127:
             snr_byte = (256 - snr_byte) * -1
         return snr_byte / 4
-
-    @property
-    def signal_bandwidth(self):
-        """The signal bandwidth used by the radio (try setting to a higher
-        value to increase throughput or to a lower value to increase the
-        likelihood of successfully received payloads).  Valid values are
-        listed in RFM9x.bw_bins."""
-        bw_id = (self._read_u8(_RH_RF95_REG_1D_MODEM_CONFIG1) & 0xF0) >> 4
-        if bw_id >= len(self.bw_bins):
-            current_bandwidth = 500000
-        else:
-            current_bandwidth = self.bw_bins[bw_id]
-        return current_bandwidth
-
-    @signal_bandwidth.setter
-    def signal_bandwidth(self, val):
-        # Set signal bandwidth (set to 125000 to match RadioHead Bw125).
-        for bw_id, cutoff in enumerate(self.bw_bins):
-            if val <= cutoff:
-                break
-        else:
-            bw_id = 9
-        self._write_u8(
-            _RH_RF95_REG_1D_MODEM_CONFIG1,
-            (self._read_u8(_RH_RF95_REG_1D_MODEM_CONFIG1) & 0x0F) | (bw_id << 4),
-        )
-        if val >= 500000:
-            # see Semtech SX1276 errata note 2.3
-            self.auto_ifon = True
-            # see Semtech SX1276 errata note 2.1
-            if self.low_frequency_mode:
-                self._write_u8(0x36, 0x02)
-                self._write_u8(0x3A, 0x7F)
-            else:
-                self._write_u8(0x36, 0x02)
-                self._write_u8(0x3A, 0x64)
-        else:
-            # see Semtech SX1276 errata note 2.3
-            self.auto_ifon = False
-            self._write_u8(0x36, 0x03)
-            if val == 7800:
-                self._write_u8(0x2F, 0x48)
-            elif val >= 62500:
-                # see Semtech SX1276 errata note 2.3
-                self._write_u8(0x2F, 0x40)
-            else:
-                self._write_u8(0x2F, 0x44)
-            self._write_u8(0x30, 0)
-
-    @property
-    def coding_rate(self):
-        """The coding rate used by the radio to control forward error
-        correction (try setting to a higher value to increase tolerance of
-        short bursts of interference or to a lower value to increase bit
-        rate).  Valid values are limited to 5, 6, 7, or 8."""
-        cr_id = (self._read_u8(_RH_RF95_REG_1D_MODEM_CONFIG1) & 0x0E) >> 1
-        denominator = cr_id + 4
-        return denominator
-
-    @coding_rate.setter
-    def coding_rate(self, val):
-        # Set coding rate (set to 5 to match RadioHead Cr45).
-        denominator = min(max(val, 5), 8)
-        cr_id = denominator - 4
-        self._write_u8(
-            _RH_RF95_REG_1D_MODEM_CONFIG1,
-            (self._read_u8(_RH_RF95_REG_1D_MODEM_CONFIG1) & 0xF1) | (cr_id << 1),
-        )
-
-    @property
-    def spreading_factor(self):
-        """The spreading factor used by the radio (try setting to a higher
-        value to increase the receiver's ability to distinguish signal from
-        noise or to a lower value to increase the data transmission rate).
-        Valid values are limited to 6, 7, 8, 9, 10, 11, or 12."""
-        sf_id = (self._read_u8(_RH_RF95_REG_1E_MODEM_CONFIG2) & 0xF0) >> 4
-        return sf_id
-
-    @spreading_factor.setter
-    def spreading_factor(self, val):
-        # Set spreading factor (set to 7 to match RadioHead Sf128).
-        val = min(max(val, 6), 12)
-
-        if val == 6:
-            self.detection_optimize = 0x5
-        else:
-            self.detection_optimize = 0x3
-
-        self._write_u8(_RH_RF95_DETECTION_THRESHOLD,
-                       0x0C if val == 6 else 0x0A)
-        self._write_u8(
-            _RH_RF95_REG_1E_MODEM_CONFIG2,
-            (
-                (self._read_u8(_RH_RF95_REG_1E_MODEM_CONFIG2) & 0x0F)
-                | ((val << 4) & 0xF0)
-            ),
-        )
 
     @property
     def enable_crc(self):
