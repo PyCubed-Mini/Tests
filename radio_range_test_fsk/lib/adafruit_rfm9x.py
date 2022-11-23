@@ -508,7 +508,7 @@ class RFM9x:
 
         fei_value = twos_comp(
             ((msb << 16) | (mid << 8) | (lsb)) & 0xFFFFFF, 20)
-        f_error = ((fei_value * (2 ^ 24)) / _RH_RF95_FXOSC) * (bw_khz / 500)
+        f_error = ((fei_value * (2 ** 24)) / _RH_RF95_FXOSC) * (bw_khz / 500)
         return f_error
 
     @property
