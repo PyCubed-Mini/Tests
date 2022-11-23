@@ -256,7 +256,7 @@ class RFM9x:
             reg_value |= (val & 0xFF) << self._offset
             obj._write_u8(self._address, reg_value)
 
-    operation_mode = _RegisterBits(_RH_RF95_REG_01_OP_MODE, bits=3)
+    operation_mode = _RegisterBits(_RH_RF95_REG_01_OP_MODE, offset=0, bits=3)
 
     low_frequency_mode = _RegisterBits(
         _RH_RF95_REG_01_OP_MODE, offset=3, bits=1)
@@ -266,13 +266,13 @@ class RFM9x:
     # Long range/LoRa mode can only be set in sleep mode!
     long_range_mode = _RegisterBits(_RH_RF95_REG_01_OP_MODE, offset=7, bits=1)
 
-    output_power = _RegisterBits(_RH_RF95_REG_09_PA_CONFIG, bits=4)
+    output_power = _RegisterBits(_RH_RF95_REG_09_PA_CONFIG, offset=0, bits=4)
 
     max_power = _RegisterBits(_RH_RF95_REG_09_PA_CONFIG, offset=4, bits=3)
 
     pa_select = _RegisterBits(_RH_RF95_REG_09_PA_CONFIG, offset=7, bits=1)
 
-    pa_dac = _RegisterBits(_RH_RF95_REG_4D_PA_DAC, bits=3)
+    pa_dac = _RegisterBits(_RH_RF95_REG_4D_PA_DAC, offset=0, bits=3)
 
     dio0_mapping = _RegisterBits(
         _RH_RF95_REG_40_DIO_MAPPING1, offset=6, bits=2)
