@@ -284,14 +284,11 @@ class RFM9x:
     modulation_shaping = _RegisterBits(
         _RH_RF95_REG_0A_PA_RAMP, offset=6, bits=2)
 
-    packet_format = _RegisterBits(
-        _RH_RF95_REG_30_PKT_CONFIG_1, offset=7, bits=1)
+    packet_format = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=7, bits=1)
     dc_free = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=5, bits=2)
     crc_on = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=4, bits=1)
-    crc_auto_clear = _RegisterBits(
-        _RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
-    address_filtering = _RegisterBits(
-        _RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
+    crc_auto_clear = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
+    address_filtering = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
     data_mode = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=6, bits=1)
 
     _bw_mantissa = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=3, bits=2)
@@ -479,7 +476,7 @@ class RFM9x:
         self.operation_mode = SLEEP_MODE
 
     def listen(self):
-        """Listen for packets to be received by the chip.  Use :py:func:`receive`
+        """Listen for packets to be received by the chip.  Use: py: func: `receive`
         to listen, wait and retrieve packets as they're available.
         """
         self.operation_mode = RX_MODE
@@ -488,31 +485,30 @@ class RFM9x:
     def transmit(self):
         """Transmit a packet which is queued in the FIFO.  This is a low level
         function for entering transmit mode and more.  For generating and
-        transmitting a packet of data use :py:func:`send` instead.
+        transmitting a packet of data use: py: func: `send` instead.
         """
         self.operation_mode = TX_MODE
         self.dio0_mapping = 0b01  # Interrupt on tx done.
 
     @property
     def preamble_length(self):
-        """The length of the preamble for sent and received packets, an unsigned
-        16-bit value.  Received packets must match this length or they are
-        ignored! Set to 8 to match the RadioHead RFM95 library.
+        """The length of the preamble for sent packets, an unsigned
+        16-bit value. Default is 0x0003.
         """
-        msb = self._read_u8(_RH_RF95_REG_20_PREAMBLE_MSB)
-        lsb = self._read_u8(_RH_RF95_REG_21_PREAMBLE_LSB)
+        msb = self._read_u8(_RH_RF95_REG_25_PREAMBLE_MSB)
+        lsb = self._read_u8(_RH_RF95_REG_26_PREAMBLE_LSB)
         return ((msb << 8) | lsb) & 0xFFFF
 
     @preamble_length.setter
     def preamble_length(self, val):
         assert 0 <= val <= 65535
-        self._write_u8(_RH_RF95_REG_20_PREAMBLE_MSB, (val >> 8) & 0xFF)
-        self._write_u8(_RH_RF95_REG_21_PREAMBLE_LSB, val & 0xFF)
+        self._write_u8(_RH_RF95_REG_25_PREAMBLE_MSB, (val >> 8) & 0xFF)
+        self._write_u8(_RH_RF95_REG_26_PREAMBLE_LSB, val & 0xFF)
 
     @property
     def frequency_mhz(self):
         """The frequency of the radio in Megahertz. Only the allowed values for
-        your radio must be specified (i.e. 433 vs. 915 mhz)!
+        your radio must be specified(i.e. 433 vs. 915 mhz)!
         """
         msb = self._read_u8(_RH_RF95_REG_06_FRF_MSB)
         mid = self._read_u8(_RH_RF95_REG_07_FRF_MID)
@@ -581,7 +577,7 @@ class RFM9x:
     @property
     def frequency_error(self):
         """
-        The frequency error 
+        The frequency error
         """
         msb = self._read_u8(_RH_RF95_REG_1D_FEI_MSB)
         lsb = self._read_u8(_RH_RF95_REG_1E_FEI_LSB)
@@ -594,10 +590,10 @@ class RFM9x:
     @property
     def tx_power(self):
         """The transmit power in dBm. Can be set to a value from 5 to 23 for
-        high power devices (RFM95/96/97/98, high_power=True) or -1 to 14 for low
-        power devices. Only integer power levels are actually set (i.e. 12.5
+        high power devices(RFM95/96/97/98, high_power=True) or -1 to 14 for low
+        power devices. Only integer power levels are actually set(i.e. 12.5
         will result in a value of 12 dBm).
-        The actual maximum setting for high_power=True is 20dBm but for values > 20
+        The actual maximum setting for high_power = True is 20dBm but for values > 20
         the PA_BOOST will be enabled resulting in an additional gain of 3dBm.
         The actual setting is reduced by 3dBm.
         """
@@ -641,7 +637,7 @@ class RFM9x:
     @property
     def rx_bandwidth(self):
         """
-        The receiver filter bandwidth in Hz. Defined using a mantissa and exponent (see table 40, pg 88 in Semtech Docs)
+        The receiver filter bandwidth in Hz. Defined using a mantissa and exponent(see table 40, pg 88 in Semtech Docs)
         """
         mant_binary = self._bw_mantissa
         exp = self._bw_exponent
@@ -671,15 +667,15 @@ class RFM9x:
 
     def tx_done(self):
         """Transmit status"""
-        return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x8) >> 3
+        return (self._read_u8(_RH_RF95_REG_3F_IRQ_FLAGS_2) & 0b1000) >> 3
 
-    def rx_done(self):
+    def payload_ready(self):
         """Receive status"""
-        return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x40) >> 6
+        return (self._read_u8(_RH_RF95_REG_3F_IRQ_FLAGS_2) & 0b0100) >> 2
 
-    def crc_error(self):
+    def crc_ok(self):
         """crc status"""
-        return (self._read_u8(_RH_RF95_REG_12_IRQ_FLAGS) & 0x20) >> 5
+        return (self._read_u8(_RH_RF95_REG_3F_IRQ_FLAGS_2) & 0b0010) >> 1
 
     # pylint: disable=too-many-branches
     def send(
@@ -697,8 +693,8 @@ class RFM9x:
         (limited by chip's FIFO size and appended headers).
         This appends a 4 byte header to be compatible with the RadioHead library.
         The header defaults to using the initialized attributes:
-        (destination,node,identifier,flags)
-        It may be temporarily overidden via the kwargs - destination,node,identifier,flags.
+        (destination, node, identifier, flags)
+        It may be temporarily overidden via the kwargs - destination, node, identifier, flags.
         Values passed via kwargs do not alter the attribute settings.
         The keep_listening argument should be set to True if you want to start listening
         automatically after the packet is sent. The default setting is False.
@@ -710,7 +706,7 @@ class RFM9x:
         # efficient and proper way to ensure a precondition that the provided
         # buffer be within an expected range of bounds. Disable this check.
         # pylint: disable=len-as-condition
-        assert 0 < len(data) <= 252
+        assert 0 < len(data) <= 60
         # pylint: enable=len-as-condition
         self.idle()  # Stop receiving to clear FIFO and keep it clear.
         # Fill the FIFO with a packet to send.
@@ -806,18 +802,18 @@ class RFM9x:
         self, *, keep_listening=True, with_header=False, with_ack=False, timeout=None, debug=False
     ):
         """Wait to receive a packet from the receiver. If a packet is found the payload bytes
-        are returned, otherwise None is returned (which indicates the timeout elapsed with no
+        are returned, otherwise None is returned(which indicates the timeout elapsed with no
         reception).
         If keep_listening is True (the default) the chip will immediately enter listening mode
         after reception of a packet, otherwise it will fall back to idle mode and ignore any
         future reception.
         All packets must have a 4-byte header for compatibilty with the
         RadioHead library.
-        The header consists of 4 bytes (To,From,ID,Flags). The default setting will  strip
+        The header consists of 4 bytes(To, From, ID, Flags). The default setting will  strip
         the header before returning the packet to the caller.
         If with_header is True then the 4 byte header will be returned with the packet.
         The payload then begins at packet[4].
-        If with_ack is True, send an ACK after receipt (Reliable Datagram mode)
+        If with_ack is True, send an ACK after receipt(Reliable Datagram mode)
         """
         timed_out = False
         if timeout is None:
