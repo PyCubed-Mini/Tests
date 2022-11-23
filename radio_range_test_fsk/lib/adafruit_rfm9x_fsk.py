@@ -549,6 +549,24 @@ class RFM9x:
         self._write_u8(_RH_RF95_REG_5D_BITRATE_FRAC, frac_part)
 
     @property
+    def frequency_deviation(self):
+        msb = self._read_u8(_RH_RF95_REG_04_FREQ_DEVIATION_MSB) & 0x1F
+        lsb = self._read_u8(_RH_RF95_REG_05_FREQ_DEVIATION_LSB)
+
+        fd = (((msb << 8) | lsb) & 0xFFFF) * _RH_RF95_FSTEP
+
+        return fd
+
+    @frequency_deviation.setter
+    def frequency_deviation(self, val):
+        val = int(val)
+        msb = (val >> 8) & 0xFF
+        lsb = val & 0xFF
+
+        self._write_u8(_RH_RF95_REG_04_FREQ_DEVIATION_MSB, msb)
+        self._write_u8(_RH_RF95_REG_05_FREQ_DEVIATION_LSB, lsb)
+
+    @property
     def frequency_error(self):
         """
         The frequency error 
