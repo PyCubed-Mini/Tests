@@ -138,7 +138,7 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
-rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
+rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
 if board_str == "s":
     rfm9x.dio0 = radio_DIO0
 
@@ -205,7 +205,7 @@ if mode_str == "r":
         msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
         if msg is not None:
             print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr} | FEI: {rfm9x.frequency_error})\t" +
-                  msg.decode("utf-8"))
+                  str(msg))  # .decode("ascii"))
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
