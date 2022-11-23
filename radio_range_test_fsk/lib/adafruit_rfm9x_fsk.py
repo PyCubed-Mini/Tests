@@ -281,8 +281,27 @@ class RFM9x:
 
     lna_gain = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=5, bits=3)
 
-    # ???
-    auto_agc = _RegisterBits(_RH_RF95_REG_26_MODEM_CONFIG3, offset=2, bits=1)
+    modulation_shaping = _RegisterBits(
+        _RH_RF95_REG_0A_PA_RAMP, offset=6, bits=2)
+
+    packet_format = _RegisterBits(
+        _RH_RF95_REG_30_PKT_CONFIG_1, offset=7, bits=1)
+    dc_free = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=5, bits=2)
+    crc_on = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=4, bits=1)
+    crc_auto_clear = _RegisterBits(
+        _RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
+    address_filtering = _RegisterBits(
+        _RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
+    data_mode = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=6, bits=1)
+
+    _bw_mantissa = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=3, bits=2)
+    _bw_exponent = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=0, bits=3)
+    _bw_bins_kHz = (2.5, 3.1, 3.9, 5.2, 6.3, 7.8, 10.4, 12.5, 15.6, 20.8,
+                    25.0, 31.3, 41.7, 50.0, 62.5, 83.3, 100.0, 125.0, 166.7, 200.0, 250.0)
+    _bw_mant_bins = (2, 1, 0, 2, 1, 0, 2, 1, 0, 2,
+                     1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 0)
+    _bw_exp_bins = (7, 7, 7, 6, 6, 6, 5, 5, 5, 4,
+                    4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1)
 
     def __init__(
         self,
@@ -290,12 +309,11 @@ class RFM9x:
         cs,
         reset,
         frequency,
-        *,
         preamble_length=8,
         high_power=True,
-        code_rate=5,
-        baudrate=5000000,
-        agc=False,
+        bitrate=1200,
+        frequency_deviation=5000,
+        spi_baudrate=5000000,
         crc=True
     ):
         self.high_power = high_power
@@ -321,7 +339,7 @@ class RFM9x:
         # Also set long range mode to false (FSK mode) as it can only be done in sleep.
         self.sleep()
         time.sleep(0.01)
-        self.long_range_mode = False
+        self.long_range_mode = False  # choose FSK instead of LoRA
         if self.operation_mode != SLEEP_MODE or self.long_range_mode:
             raise RuntimeError(
                 "Failed to configure radio for FSK mode, check wiring!")
@@ -331,39 +349,33 @@ class RFM9x:
         else:
             self.low_frequency_mode = 1
 
+        self.idle()
+
         # Set modulation type to FSK
         self.modulation_type = 0x00
-
-        # Set mode idle
-        self.idle()
-        # Set frequency
+        # Gaussian filter, BT = 0.5
+        self.modulation_shaping = 0b10
+        self.frequency_deviation = frequency_deviation
+        self.bitrate = bitrate
         self.frequency_mhz = frequency
-        # Set preamble length (default 8 bytes to match radiohead).
         self.preamble_length = preamble_length
-        # Defaults set modem config to RadioHead compatible Bw125Cr45Sf128 mode.
-        self.signal_bandwidth = 125000
-        self.coding_rate = code_rate
-        self.spreading_factor = 7
-        # Default to enable CRC checking on incoming packets.
-        self.enable_crc = crc
-        """CRC Enable state"""
-        # set AGC - Default = False
-        self.auto_agc = agc
-        """Automatic Gain Control state"""
-        # Set transmit power to 13 dBm, a safe value any module supports.
-        self.tx_power = 13
-        # initialize last RSSI reading
+
+        self.packet_format = 0b1  # variable length packets
+        self.dc_free = 0b01  # Manchester coding
+        self.crc_on = crc
+        self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
+        self.address_filtering = 0b00  # no address filtering
+        self.data_mode = 0b1  # packet mode
+
+        self.tx_power = 13  # 13 dBm is a safe value any module support
+
         self.last_rssi = 0.0
         """The RSSI of the last received packet. Stored when the packet was received.
            The instantaneous RSSI value may not be accurate once the
            operating mode has been changed.
         """
-        self.last_snr = 0.0
-        """The SNR of the last received packet. Stored when the packet was received.
-           The instantaneous SNR value may not be accurate once the
-           operating mode has been changed.
-        """
-        # initialize timeouts and delays delays
+
+        # initialize timeouts and delays
         self.ack_wait = 0.5
         """The delay time before attempting a retry after not receiving an ACK"""
         self.receive_timeout = 0.5
@@ -571,17 +583,12 @@ class RFM9x:
         """
         The frequency error 
         """
-        msb = self._read_u8(_RH_RF95_REG_28_FREQ_ERR_MSB)
-        mid = self._read_u8(_RH_RF95_REG_29_FREQ_ERR_MID)
-        lsb = self._read_u8(_RH_RF95_REG_2A_FREQ_ERR_LSB)
-
-        bw_khz = self.signal_bandwidth / 1000.0
-
-        print(f"msb = {msb}")
+        msb = self._read_u8(_RH_RF95_REG_1D_FEI_MSB)
+        lsb = self._read_u8(_RH_RF95_REG_1E_FEI_LSB)
 
         fei_value = twos_comp(
-            ((msb << 16) | (mid << 8) | (lsb)) & 0xFFFFFF, 20)
-        f_error = ((fei_value * (2 ** 24)) / _RH_RF95_FXOSC) * (bw_khz / 500)
+            ((msb << 8) | lsb) & 0xFFFF, 16)
+        f_error = fei_value * _RH_RF95_FSTEP
         return f_error
 
     @property
@@ -628,43 +635,39 @@ class RFM9x:
         """The received strength indicator (in dBm) of the last received message."""
         # Read RSSI register and convert to value using formula in datasheet.
         # Remember in LoRa mode the payload register changes function to RSSI!
-        raw_rssi = self._read_u8(_RH_RF95_REG_1A_PKT_RSSI_VALUE)
-        if self.low_frequency_mode:
-            raw_rssi -= 157
-        else:
-            raw_rssi -= 164
-        return raw_rssi
+        raw_rssi = self._read_u8(_RH_RF95_REG_11_RSSI_VALUE)
+        return -raw_rssi / 2
 
     @property
-    def snr(self):
-        """The SNR (in dB) of the last received message."""
-        # Read SNR 0x19 register and convert to value using formula in datasheet.
-        # SNR(dB) = PacketSnr [twos complement] / 4
-        snr_byte = self._read_u8(_RH_RF95_REG_19_PKT_SNR_VALUE)
-        if snr_byte > 127:
-            snr_byte = (256 - snr_byte) * -1
-        return snr_byte / 4
+    def rx_bandwidth(self):
+        """
+        The receiver filter bandwidth in Hz. Defined using a mantissa and exponent (see table 40, pg 88 in Semtech Docs)
+        """
+        mant_binary = self._bw_mantissa
+        exp = self._bw_exponent
 
-    @property
-    def enable_crc(self):
-        """Set to True to enable hardware CRC checking of incoming packets.
-        Incoming packets that fail the CRC check are not processed.  Set to
-        False to disable CRC checking and process all incoming packets."""
-        return (self._read_u8(_RH_RF95_REG_1E_MODEM_CONFIG2) & 0x04) == 0x04
-
-    @enable_crc.setter
-    def enable_crc(self, val):
-        # Optionally enable CRC checking on incoming packets.
-        if val:
-            self._write_u8(
-                _RH_RF95_REG_1E_MODEM_CONFIG2,
-                self._read_u8(_RH_RF95_REG_1E_MODEM_CONFIG2) | 0x04,
-            )
+        if mant_binary == 0b10:
+            mant = 24
+        elif mant_binary == 0b01:
+            mant = 20
+        elif mant_binary == 0b00:
+            mant = 16
         else:
-            self._write_u8(
-                _RH_RF95_REG_1E_MODEM_CONFIG2,
-                self._read_u8(_RH_RF95_REG_1E_MODEM_CONFIG2) & 0xFB,
-            )
+            raise ValueError(f"RX bandwidth mantissa {mant_binary} invalid")
+
+        rxbw = _RH_RF95_FXOSC / (mant * (2**(exp+2)))
+        return rxbw
+
+    @rx_bandwidth.setter
+    def rx_bandwidth(self, val):
+        try:
+            idx = self._bw_bins_kHz.index(val)
+        except ValueError:
+            raise ValueError(
+                f"Invalid recieve bandwidth {val}, must be one of {self._bw_bins_kHz}")
+
+        self._bw_mantissa = self._bw_mant_bins[idx]
+        self._bw_exponent = self._bw_exp_bins[idx]
 
     def tx_done(self):
         """Transmit status"""
@@ -841,9 +844,6 @@ class RFM9x:
         packet = None
         # save last RSSI reading
         self.last_rssi = self.rssi
-
-        # save the last SNR reading
-        self.last_snr = self.snr
 
         # Enter idle mode to stop receiving other packets.
         self.idle()
