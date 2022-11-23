@@ -174,6 +174,8 @@ if param_str == "y":
                                                    [f"{i}" for i in range(1, 7)], allow_default=True)
     timeout = set_param_from_input_range(timeout, f"Timeout (currently {timeout} s)",
                                          [0.0, 1000.0], allow_default=True)
+    rfm9x.preamble_length = set_param_from_input_range(rfm9x.preamble_length, f"Preamble length (currently {rfm9x.preamble_length})",
+                                                       [6, 65535], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
