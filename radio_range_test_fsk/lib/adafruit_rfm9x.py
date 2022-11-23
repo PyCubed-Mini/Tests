@@ -30,64 +30,95 @@ __version__ = "2.2.3"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_RFM9x.git"
 
 # Internal constants:
-# Register names (FSK Mode even though we use LoRa instead, from table 85)
+# Register names
+
+# FIFO
 _RH_RF95_REG_00_FIFO = const(0x00)
+# Registers for common settings
 _RH_RF95_REG_01_OP_MODE = const(0x01)
+_RH_RF95_REG_02_BITRATE_MSB = const(0x02)
+_RH_RF95_REG_03_BITRATE_LSB = const(0x03)
+_RH_RF95_REG_04_FREQ_DEVIATION_MSB = const(0x04)
+_RH_RF95_REG_05_FREQ_DEVIATION_LSB = const(0x05)
 _RH_RF95_REG_06_FRF_MSB = const(0x06)
 _RH_RF95_REG_07_FRF_MID = const(0x07)
 _RH_RF95_REG_08_FRF_LSB = const(0x08)
+# Registers for the transmitter
 _RH_RF95_REG_09_PA_CONFIG = const(0x09)
 _RH_RF95_REG_0A_PA_RAMP = const(0x0A)
 _RH_RF95_REG_0B_OCP = const(0x0B)
+# Registers for the receiver
 _RH_RF95_REG_0C_LNA = const(0x0C)
-_RH_RF95_REG_0D_FIFO_ADDR_PTR = const(0x0D)
-_RH_RF95_REG_0E_FIFO_TX_BASE_ADDR = const(0x0E)
-_RH_RF95_REG_0F_FIFO_RX_BASE_ADDR = const(0x0F)
-_RH_RF95_REG_10_FIFO_RX_CURRENT_ADDR = const(0x10)
-_RH_RF95_REG_11_IRQ_FLAGS_MASK = const(0x11)
-_RH_RF95_REG_12_IRQ_FLAGS = const(0x12)
-_RH_RF95_REG_13_RX_NB_BYTES = const(0x13)
-_RH_RF95_REG_14_RX_HEADER_CNT_VALUE_MSB = const(0x14)
-_RH_RF95_REG_15_RX_HEADER_CNT_VALUE_LSB = const(0x15)
-_RH_RF95_REG_16_RX_PACKET_CNT_VALUE_MSB = const(0x16)
-_RH_RF95_REG_17_RX_PACKET_CNT_VALUE_LSB = const(0x17)
-_RH_RF95_REG_18_MODEM_STAT = const(0x18)
-_RH_RF95_REG_19_PKT_SNR_VALUE = const(0x19)
-_RH_RF95_REG_1A_PKT_RSSI_VALUE = const(0x1A)
-_RH_RF95_REG_1B_RSSI_VALUE = const(0x1B)
-_RH_RF95_REG_1C_HOP_CHANNEL = const(0x1C)
-_RH_RF95_REG_1D_MODEM_CONFIG1 = const(0x1D)
-_RH_RF95_REG_1E_MODEM_CONFIG2 = const(0x1E)
-_RH_RF95_REG_1F_SYMB_TIMEOUT_LSB = const(0x1F)
-_RH_RF95_REG_20_PREAMBLE_MSB = const(0x20)
-_RH_RF95_REG_21_PREAMBLE_LSB = const(0x21)
-_RH_RF95_REG_22_PAYLOAD_LENGTH = const(0x22)
-_RH_RF95_REG_23_MAX_PAYLOAD_LENGTH = const(0x23)
-_RH_RF95_REG_24_HOP_PERIOD = const(0x24)
-_RH_RF95_REG_25_FIFO_RX_BYTE_ADDR = const(0x25)
-_RH_RF95_REG_26_MODEM_CONFIG3 = const(0x26)
-
-_RH_RF95_REG_28_FREQ_ERR_MSB = const(0x28)
-_RH_RF95_REG_29_FREQ_ERR_MID = const(0x29)
-_RH_RF95_REG_2A_FREQ_ERR_LSB = const(0x2A)
-
+_RH_RF95_REG_0D_RX_CONFIG = const(0x0D)
+_RH_RF95_REG_0E_RSSI_CONFIG = const(0x0E)
+_RH_RF95_REG_0F_RSSI_COLLISION = const(0x0F)
+_RH_RF95_REG_10_RSSI_THRESH = const(0x10)
+_RH_RF95_REG_11_RSSI_VALUE = const(0x11)
+_RH_RF95_REG_12_RX_BW = const(0x12)
+_RH_RF95_REG_13_AFC_BW = const(0x13)
+_RH_RF95_REG_14_OOK_PEAK = const(0x14)
+_RH_RF95_REG_15_OOK_FIX = const(0x15)
+_RH_RF95_REG_16_OOK_AVG = const(0x16)
+# 0x17 to 0x19 - Reserved
+_RH_RF95_REG_1A_AFC_FEI = const(0x1A)
+_RH_RF95_REG_1B_AFC_MSB = const(0x1B)
+_RH_RF95_REG_1C_AFC_LSB = const(0x1C)
+_RH_RF95_REG_1D_FEI_MSB = const(0x1D)
+_RH_RF95_REG_1E_FEI_LSB = const(0x1E)
+_RH_RF95_REG_1F_PREAMBLE_DETECT = const(0x1F)
+_RH_RF95_REG_20_RX_TIMEOUT1 = const(0x20)
+_RH_RF95_REG_21_RX_TIMEOUT2 = const(0x21)
+_RH_RF95_REG_22_RX_TIMEOUT3 = const(0x22)
+_RH_RF95_REG_23_RX_DELAY = const(0x23)
+# Registers for RC oscillator
+_RH_RF95_REG_24_OSC = const(0x24)
+# Registers for packet handling
+_RH_RF95_REG_25_PREAMBLE_MSB = const(0x25)
+_RH_RF95_REG_26_PREAMBLE_LSB = const(0x26)
+_RH_RF95_REG_27_SYNC_CONFIG = const(0x27)
+_RH_RF95_REG_28_SYNC_VALUE_1 = const(0x28)  # Most significant byte
+_RH_RF95_REG_29_SYNC_VALUE_2 = const(0x29)
+_RH_RF95_REG_2A_SYNC_VALUE_3 = const(0x2A)
+_RH_RF95_REG_2B_SYNC_VALUE_4 = const(0x2B)
+_RH_RF95_REG_2C_SYNC_VALUE_5 = const(0x2C)
+_RH_RF95_REG_2D_SYNC_VALUE_6 = const(0x2D)
+_RH_RF95_REG_2E_SYNC_VALUE_7 = const(0x2E)
+_RH_RF95_REG_2F_SYNC_VALUE_8 = const(0x2F)
+_RH_RF95_REG_30_PKT_CONFIG_1 = const(0x30)
+_RH_RF95_REG_31_PKT_CONFIG_2 = const(0x31)
+_RH_RF95_REG_32_PAYLOAD_LEN = const(0x32)
+_RH_RF95_REG_33_NODE_ADDRESS = const(0x33)
+_RH_RF95_REG_34_BROADCAST_ADDRESS = const(0x34)
+_RH_RF95_REG_35_FIFO_THRESH = const(0x35)
+# Sequencer registers
+_RH_RF95_REG_36_SEQ_CONFIG_1 = const(0x36)
+_RH_RF95_REG_37_SEQ_CONFIG_2 = const(0x37)
+_RH_RF95_REG_38_TIMER_RESOLUTION = const(0x38)
+_RH_RF95_REG_39_TIMER1_COEF = const(0x39)
+_RH_RF95_REG_3A_TIMER2_COEF = const(0x3A)
+# Service registers
+_RH_RF95_REG_3B_IMAGE_CAL = const(0x3B)
+_RH_RF95_REG_3C_TEMP = const(0x3C)
+_RH_RF95_REG_3D_LOW_BATT = const(0x3C)
+# Status registers
+_RH_RF95_REG_3E_IRQ_FLAGS_1 = const(0x3D)
+_RH_RF95_REG_3F_IRQ_FLAGS_2 = const(0x3F)
+# IO control registers
 _RH_RF95_REG_40_DIO_MAPPING1 = const(0x40)
 _RH_RF95_REG_41_DIO_MAPPING2 = const(0x41)
 _RH_RF95_REG_42_VERSION = const(0x42)
-
+# Additional registers
+_RH_RF95_REG_44_PLL_HOP = const(0x44)
 _RH_RF95_REG_4B_TCXO = const(0x4B)
 _RH_RF95_REG_4D_PA_DAC = const(0x4D)
 _RH_RF95_REG_5B_FORMER_TEMP = const(0x5B)
+_RH_RF95_REG_5D_BITRATE_FRAC = const(0x5D)
+# Band-specific additional registers
 _RH_RF95_REG_61_AGC_REF = const(0x61)
 _RH_RF95_REG_62_AGC_THRESH1 = const(0x62)
 _RH_RF95_REG_63_AGC_THRESH2 = const(0x63)
 _RH_RF95_REG_64_AGC_THRESH3 = const(0x64)
-
-_RH_RF95_DETECTION_OPTIMIZE = const(0x31)
-_RH_RF95_DETECTION_THRESHOLD = const(0x37)
-
-_RH_RF95_PA_DAC_DISABLE = const(0x04)
-_RH_RF95_PA_DAC_ENABLE = const(0x07)
+_RH_RF95_REG_70_PLL = const(0x70)
 
 # The crystal oscillator frequency of the module
 _RH_RF95_FXOSC = 32000000.0
