@@ -2,7 +2,7 @@
 import board
 import busio
 import digitalio
-import lib.adafruit_rfm9x as adafruit_rfm9x
+import lib.adafruit_rfm9x_fsk as adafruit_rfm9x
 import time
 
 

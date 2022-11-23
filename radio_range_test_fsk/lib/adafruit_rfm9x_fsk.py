@@ -569,7 +569,7 @@ class RFM9x:
 
     @property
     def frequency_deviation(self):
-        msb = self._read_u8(_RH_RF95_REG_04_FREQ_DEVIATION_MSB) & 0x1F
+        msb = self._read_u8(_RH_RF95_REG_04_FREQ_DEVIATION_MSB) & 0x3F
         lsb = self._read_u8(_RH_RF95_REG_05_FREQ_DEVIATION_LSB)
 
         fd = (((msb << 8) | lsb) & 0xFFFF) * _RH_RF95_FSTEP
@@ -578,8 +578,8 @@ class RFM9x:
 
     @frequency_deviation.setter
     def frequency_deviation(self, val):
-        val = int(val)
-        msb = (val >> 8) & 0xFF
+        val = int(val / _RH_RF95_FSTEP)
+        msb = (val >> 8) & 0x3F
         lsb = val & 0xFF
 
         self._write_u8(_RH_RF95_REG_04_FREQ_DEVIATION_MSB, msb)
@@ -648,7 +648,7 @@ class RFM9x:
     @property
     def rx_bandwidth(self):
         """
-        The receiver filter bandwidth in Hz. 
+        The receiver filter bandwidth in kHz. 
         """
         # Defined using a mantissa and exponent(see table 40, pg 88 in Semtech Docs)
         mant_binary = self._bw_mantissa
@@ -664,7 +664,7 @@ class RFM9x:
             raise ValueError(f"RX bandwidth mantissa {mant_binary} invalid")
 
         rxbw = _RH_RF95_FXOSC / (mant * (2**(exp+2)))
-        return rxbw
+        return rxbw/1000
 
     @rx_bandwidth.setter
     def rx_bandwidth(self, val):
