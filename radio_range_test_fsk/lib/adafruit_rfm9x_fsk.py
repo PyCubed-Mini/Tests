@@ -120,6 +120,12 @@ _RH_RF95_REG_63_AGC_THRESH2 = const(0x63)
 _RH_RF95_REG_64_AGC_THRESH3 = const(0x64)
 _RH_RF95_REG_70_PLL = const(0x70)
 
+
+# PA DAC register options
+_RH_RF95_PA_DAC_DISABLE = const(0x04)
+_RH_RF95_PA_DAC_ENABLE = const(0x07)
+
+
 # The crystal oscillator frequency of the module
 _RH_RF95_FXOSC = 32000000.0
 
@@ -555,10 +561,13 @@ class RFM9x:
         The actual maximum setting for high_power=True is 20dBm but for values > 20
         the PA_BOOST will be enabled resulting in an additional gain of 3dBm.
         The actual setting is reduced by 3dBm.
-        The reported value will reflect the reduced setting.
         """
         if self.high_power:
-            return self.output_power + 5
+            if self.pa_dac & 0x07 == _RH_RF95_PA_DAC_ENABLE:
+                return self.output_power + 5 + 3
+            else:
+                return self.output_power + 5
+
         return self.output_power - 1
 
     @tx_power.setter

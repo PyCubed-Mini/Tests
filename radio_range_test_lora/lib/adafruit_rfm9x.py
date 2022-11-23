@@ -520,10 +520,12 @@ class RFM9x:
         The actual maximum setting for high_power=True is 20dBm but for values > 20
         the PA_BOOST will be enabled resulting in an additional gain of 3dBm.
         The actual setting is reduced by 3dBm.
-        The reported value will reflect the reduced setting.
         """
         if self.high_power:
-            return self.output_power + 5
+            if self.pa_dac & 0x07 == _RH_RF95_PA_DAC_ENABLE:
+                return self.output_power + 5 + 3
+            else:
+                return self.output_power + 5
         return self.output_power - 1
 
     @tx_power.setter
