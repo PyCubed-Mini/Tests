@@ -120,11 +120,9 @@ _RH_RF95_REG_63_AGC_THRESH2 = const(0x63)
 _RH_RF95_REG_64_AGC_THRESH3 = const(0x64)
 _RH_RF95_REG_70_PLL = const(0x70)
 
-
 # PA DAC register options
 _RH_RF95_PA_DAC_DISABLE = const(0x04)
 _RH_RF95_PA_DAC_ENABLE = const(0x07)
-
 
 # The crystal oscillator frequency of the module
 _RH_RF95_FXOSC = 32000000.0
@@ -265,7 +263,7 @@ class RFM9x:
 
     modulation_type = _RegisterBits(_RH_RF95_REG_01_OP_MODE, offset=5, bits=2)
 
-    # Long range/LoRa mode can only be set in sleep mode!
+    # Long range mode (LoRa or FSK) can only be set in sleep mode!
     long_range_mode = _RegisterBits(_RH_RF95_REG_01_OP_MODE, offset=7, bits=1)
 
     output_power = _RegisterBits(_RH_RF95_REG_09_PA_CONFIG, offset=0, bits=4)
@@ -318,7 +316,7 @@ class RFM9x:
         # Device support SPI mode 0 (polarity & phase = 0) up to a max of 10mhz.
         # Set Default Baudrate to 5MHz to avoid problems
         self._device = spidev.SPIDevice(
-            spi, cs, baudrate=baudrate, polarity=0, phase=0)
+            spi, cs, baudrate=spi_baudrate, polarity=0, phase=0)
         # Setup reset as a digital output - initially High
         # This line is pulled low as an output quickly to trigger a reset.
         self._reset = reset
@@ -513,6 +511,7 @@ class RFM9x:
 
     @preamble_length.setter
     def preamble_length(self, val):
+        val = int(val)
         assert 0 <= val <= 65535
         self._write_u8(_RH_RF95_REG_25_PREAMBLE_MSB, (val >> 8) & 0xFF)
         self._write_u8(_RH_RF95_REG_26_PREAMBLE_LSB, val & 0xFF)
@@ -649,8 +648,9 @@ class RFM9x:
     @property
     def rx_bandwidth(self):
         """
-        The receiver filter bandwidth in Hz. Defined using a mantissa and exponent(see table 40, pg 88 in Semtech Docs)
+        The receiver filter bandwidth in Hz. 
         """
+        # Defined using a mantissa and exponent(see table 40, pg 88 in Semtech Docs)
         mant_binary = self._bw_mantissa
         exp = self._bw_exponent
 

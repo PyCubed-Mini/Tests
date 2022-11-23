@@ -14,16 +14,10 @@ green = '\033[32m'
 yellow = '\033[33m'
 blue = '\033[34m'
 
-# test messages
-msg_1 = f"{bold}{yellow}111:{normal} A satellite or artificial satellite is an object intentionally placed into orbit in outer space."
-msg_2 = f"{bold}{blue}222:{normal} Except for passive satellites, most satellites have an electricity generation system for equipment on board, such as solar panels or radioisotope thermoelectric generators (RTGs)."
-msg_3 = f"{bold}{yellow}333:{normal} Most satellites also have a method of communication to ground stations, called transponders."
-msg_4 = f"{bold}{blue}444:{normal} Many satellites use a standardized bus to save cost and work, the most popular of which is small CubeSats."
-msg_5 = f"{bold}{yellow}555:{normal} Similar satellites can work together as a group, forming constellations."
-msg_6 = f"{bold}{blue}666:{normal} Because of the high launch cost to space, satellites are designed to be as lightweight and robust as possible."
-msg_7 = f"{bold}{yellow}777:{normal} Most communication satellites are radio relay stations in orbit and carry dozens of transponders, each with a bandwidth of tens of megahertz."
+# test messages - must be less than 59 bytes
+msg_1 = f"{bold}{yellow}111:{normal} Outer space exists beyond Earth."
 
-messages = [msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7]
+messages = [msg_1]
 
 
 def get_input_discrete(prompt_str, choice_values):
@@ -144,16 +138,15 @@ if board_str == "s":
 
 # RFM radio configuration
 
-# power - default is 13 dB, can go up to 23
 param_str = get_input_discrete(
     f"Change radio parameters? {bold}(y/n){normal}", ["y", "n"])
 
 # start by setting the defaults
 rfm9x.frequency_mhz = 433.0
 rfm9x.tx_power = 23
-rfm9x.signal_bandwidth = rfm9x.bw_bins[7]
-rfm9x.spreading_factor = 7
-rfm9x.coding_rate = 5
+rfm9x.bitrate = 1200
+rfm9x.frequency_deviation = 5000
+rfm9x.rx_bandwidth = 50.0
 timeout = rfm9x.receive_timeout
 rfm9x.preamble_length = 16
 
@@ -162,31 +155,28 @@ if param_str == "y":
                                                      [240.0, 960.0], allow_default=True)
     rfm9x.tx_power = set_param_from_input_discrete(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
                                                    [f"{i}" for i in range(5, 24)], allow_default=True)
-    rfm9x.signal_bandwidth = set_param_from_input_discrete(rfm9x.signal_bandwidth, f"Bandwidth (currently {rfm9x.signal_bandwidth} Hz)",
-                                                           [f"{rfm9x.bw_bins[i]}" for i in range(len(rfm9x.bw_bins))], allow_default=True)
-    rfm9x.spreading_factor = set_param_from_input_discrete(rfm9x.spreading_factor, f"Spreading Factor (currently {rfm9x.spreading_factor})",
-                                                           [f"{i}" for i in range(7, 13)], allow_default=True)
-    rfm9x.coding_rate = set_param_from_input_discrete(rfm9x.coding_rate, f"Coding Rate (currently {rfm9x.coding_rate})",
-                                                      [f"{i}" for i in range(5, 9)], allow_default=True)
-    rfm9x.low_datarate_optimize = set_param_from_input_discrete(rfm9x.low_datarate_optimize, f"Low Datarate Optimization (currently {rfm9x.low_datarate_optimize})",
-                                                                ["0", "1"], allow_default=True)
+    rfm9x.bitrate = set_param_from_input_range(rfm9x.bitrate, f"Bitrate (currently {rfm9x.bitrate} bps)",
+                                               [500, 300000], allow_default=True)
+    rfm9x.frequency_deviation = set_param_from_input_range(rfm9x.frequency_deviation, f"Frequency deviation (currently {rfm9x.frequency_deviation})",
+                                                           [600, 200000], allow_default=True)
+    rfm9x.rx_bandwidth = set_param_from_input_discrete(rfm9x.rx_bandwidth, f"Receiver filter bandwidth (currently {rfm9x.rx_bandwidth})",
+                                                       list(rfm9x._bw_bins_kHz), allow_default=True)
     rfm9x.lna_gain = set_param_from_input_discrete(rfm9x.lna_gain, f"LNA Gain - [max = 1, min = 6] (currently {rfm9x.lna_gain})",
                                                    [f"{i}" for i in range(1, 7)], allow_default=True)
+    rfm9x.preamble_length = set_param_from_input_range(rfm9x.preamble_length, f"Preamble length (currently {rfm9x.preamble_length})",
+                                                       [3, 2**16], allow_default=True)
     timeout = set_param_from_input_range(timeout, f"Timeout (currently {timeout} s)",
                                          [0.0, 1000.0], allow_default=True)
-    rfm9x.preamble_length = set_param_from_input_range(rfm9x.preamble_length, f"Preamble length (currently {rfm9x.preamble_length})",
-                                                       [6, 65535], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
 print(f"\tPower = {rfm9x.tx_power} dBm")
-print(f"\tBandwidth = {rfm9x.signal_bandwidth} Hz")
-print(f"\tSpreading Factor = {rfm9x.spreading_factor}")
-print(f"\tCoding Rate = {rfm9x.coding_rate}")
-print(f"\tLow Datarate Optimization = {rfm9x.low_datarate_optimize}")
+print(f"\tBitrate = {rfm9x.bitrate} Hz")
+print(f"\tFrequency Deviation = {rfm9x.frequency_deviation}")
+print(f"\tRX filter bandwidth = {rfm9x.rx_bandwidth}")
 print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
-print(f"\tTimeout = {timeout} s")
 print(f"\tPreamble Length = {rfm9x.preamble_length} s")
+print(f"\tTimeout = {timeout} s")
 
 mode_str = get_input_discrete(
     f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
@@ -206,7 +196,7 @@ if mode_str == "r":
     while True:
         msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
         if msg is not None:
-            print(f"(RSSI: {rfm9x.last_rssi} | SNR: {rfm9x.last_snr} | FEI: {rfm9x.frequency_error})\t" +
+            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
                   msg.decode("utf-8", errors="backslashreplace"))
 
 else:
