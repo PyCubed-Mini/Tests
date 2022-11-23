@@ -322,19 +322,23 @@ class RFM9x:
             )
 
         # Set sleep mode, wait 10s and confirm in sleep mode (basic device check).
-        # Also set long range mode (LoRa mode) as it can only be done in sleep.
+        # Also set long range mode to false (FSK mode) as it can only be done in sleep.
         self.sleep()
         time.sleep(0.01)
-        self.long_range_mode = True
-        if self.operation_mode != SLEEP_MODE or not self.long_range_mode:
+        self.long_range_mode = False
+        if self.operation_mode != SLEEP_MODE or self.long_range_mode:
             raise RuntimeError(
-                "Failed to configure radio for LoRa mode, check wiring!")
+                "Failed to configure radio for FSK mode, check wiring!")
         # clear default setting for access to LF registers if frequency > 525MHz
         if frequency > 525:
             self.low_frequency_mode = 0
+        # Set modulation type to FSK
+        self.modulation_type = 0x00
+
         # Setup entire 256 byte FIFO
         self._write_u8(_RH_RF95_REG_0E_FIFO_TX_BASE_ADDR, 0x00)
         self._write_u8(_RH_RF95_REG_0F_FIFO_RX_BASE_ADDR, 0x00)
+
         # Set mode idle
         self.idle()
         # Set frequency
