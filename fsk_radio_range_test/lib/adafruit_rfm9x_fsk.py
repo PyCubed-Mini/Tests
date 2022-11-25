@@ -876,8 +876,13 @@ class RFM9x:
                 # RadioHead header and at least one byte of data --reject this packet and ignore it.
                 if packet_length < 6:
                     if debug:
-                        print(
-                            f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')}")
+                        try:
+                            print(
+                                f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')})")
+                        except UnicodeError:
+                            print(
+                                f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
+
                     packet = None
                 else:
                     internal_packet_length = packet[0]
