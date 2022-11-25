@@ -233,7 +233,7 @@ while True:
             for i, msg in enumerate(messages):
                 bytes_msg = bytes(msg, "utf-8")
                 if ack_str == "y":
-                    if rfm9x.send_with_ack(bytes_msg):
+                    if rfm9x.send_with_ack(bytes_msg, debug=True):
                         print(
                             f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
                     else:

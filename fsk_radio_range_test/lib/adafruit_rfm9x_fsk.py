@@ -774,7 +774,7 @@ class RFM9x:
             self.idle()
         return not timed_out
 
-    def send_with_ack(self, data):
+    def send_with_ack(self, data, debug=False):
         """Reliable Datagram mode:
         Send a packet with data and wait for an ACK response.
         The packet header is automatically generated.
@@ -795,13 +795,15 @@ class RFM9x:
             else:
                 # wait for a packet from our destination
                 ack_packet = self.receive(
-                    timeout=self.ack_wait, with_header=True)
+                    timeout=self.ack_wait, with_header=True, debug=debug)
                 if ack_packet is not None:
                     if ack_packet[4] & _RH_FLAGS_ACK:
                         # check the ID
                         if ack_packet[3] == self.identifier:
                             got_ack = True
                             break
+                    if debug:
+                        print(f"Invalid ACK packet {str(ack_packet)}")
             # pause before next retry -- random delay
             if not got_ack:
                 # delay by random amount before next try
