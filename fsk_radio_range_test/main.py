@@ -209,7 +209,7 @@ while True:
                         print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
                               msg.decode("utf-8", "replace"))
                     except UnicodeError:
-                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
+                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +
                               str(msg))
 
             except KeyboardInterrupt:
