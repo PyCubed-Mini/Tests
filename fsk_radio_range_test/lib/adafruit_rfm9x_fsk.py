@@ -808,6 +808,8 @@ class RFM9x:
             if not got_ack:
                 # delay by random amount before next try
                 time.sleep(self.ack_wait + self.ack_wait * random.random())
+                if debug:
+                    print(f"No ACK, retrying send - retries remaining: {retries_remaining}")
             retries_remaining = retries_remaining - 1
             # set retry flag in packet header
             self.flags |= _RH_FLAGS_RETRY
