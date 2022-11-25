@@ -153,7 +153,7 @@ rfm9x.tx_power = 23
 rfm9x.bitrate = 1200
 rfm9x.frequency_deviation = 5000
 rfm9x.rx_bandwidth = 50.0
-timeout = rfm9x.receive_timeout
+timeout = 30
 rfm9x.preamble_length = 16
 rfm9x.ack_wait = 10
 
