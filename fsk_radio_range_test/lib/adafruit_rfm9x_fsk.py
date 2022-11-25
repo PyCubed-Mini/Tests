@@ -794,6 +794,7 @@ class RFM9x:
                 got_ack = True
             else:
                 # wait for a packet from our destination
+                self.idle()
                 ack_packet = self.receive(
                     timeout=self.ack_wait, with_header=True, debug=debug)
                 if ack_packet is not None:
