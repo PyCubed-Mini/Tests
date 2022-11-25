@@ -155,6 +155,7 @@ rfm9x.frequency_deviation = 5000
 rfm9x.rx_bandwidth = 50.0
 timeout = rfm9x.receive_timeout
 rfm9x.preamble_length = 16
+rfm9x.ack_delay = 0.1
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
@@ -173,6 +174,8 @@ if param_str == "y":
                                                        [3, 2**16], allow_default=True)
     timeout = set_param_from_input_range(timeout, f"Timeout (currently {timeout} s)",
                                          [0.0, 1000.0], allow_default=True)
+    rfm9x.ack_delay = set_param_from_input_range(rfm9x.ack_delay, f"Acknowledge delay (currently {rfm9x.ack_delay} s)",
+                                                 [0.0, 10.0], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
@@ -182,7 +185,8 @@ print(f"\tFrequency Deviation = {rfm9x.frequency_deviation}")
 print(f"\tRX filter bandwidth = {rfm9x.rx_bandwidth}")
 print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
 print(f"\tPreamble Length = {rfm9x.preamble_length}")
-print(f"\tTimeout = {timeout} s")
+print(f"\tReceive timeout = {timeout} s")
+print(f"\tAcknowledge delay = {rfm9x.ack_delay} s")
 
 while True:
 
