@@ -184,49 +184,54 @@ print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
 print(f"\tPreamble Length = {rfm9x.preamble_length}")
 print(f"\tTimeout = {timeout} s")
 
-mode_str = get_input_discrete(
-    f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
-    ["r", "t"])
+while True:
 
-ack_str = get_input_discrete(
-    f"Acknowledge? {bold}(y/n){normal}", ["y", "n"])
+    mode_str = get_input_discrete(
+        f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
+        ["r", "t"])
 
-ack = (ack_str == "y")
+    ack_str = get_input_discrete(
+        f"Acknowledge? {bold}(y/n){normal}", ["y", "n"])
 
-if mode_str == "r":
-    print(f"{bold}Receive{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
-    rfm9x.node = 0xAB  # our ID
-    rfm9x.destination = 0xBA  # target's ID
+    ack = (ack_str == "y")
 
-    print(f"\n{yellow}Receiving...{normal}")
-    while True:
-        msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
-        if msg is not None:
-            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
-                  msg.decode("utf-8", "backslashreplace"))
+    if mode_str == "r":
+        print(f"{bold}Receive{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
+        rfm9x.node = 0xAB  # our ID
+        rfm9x.destination = 0xBA  # target's ID
 
-else:
-    print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
-    rfm9x.node = 0xBA  # our ID
-    rfm9x.destination = 0xAB  # target's ID
+        print(f"\n{yellow}Receiving (CTRL-C to exit)...{normal}")
+        while True:
+            try:
+                msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
+                if msg is not None:
+                    print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
+                          msg.decode("utf-8", "backslashreplace"))
+            except KeyboardInterrupt:
+                break
 
-    while True:
-        for i, msg in enumerate(messages):
-            bytes_msg = bytes(msg, "utf-8")
-            if ack_str == "y":
-                if rfm9x.send_with_ack(bytes_msg):
-                    print(
-                        f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
+    else:
+        print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
+        rfm9x.node = 0xBA  # our ID
+        rfm9x.destination = 0xAB  # target's ID
+
+        while True:
+            for i, msg in enumerate(messages):
+                bytes_msg = bytes(msg, "utf-8")
+                if ack_str == "y":
+                    if rfm9x.send_with_ack(bytes_msg):
+                        print(
+                            f"Message {bold}{i+1}{normal}: {green}Acknowledged{normal}")
+                    else:
+                        print(
+                            f"Message {bold}{i+1}{normal}: {red}No acknowledge{normal}")
                 else:
-                    print(
-                        f"Message {bold}{i+1}{normal}: {red}No acknowledge{normal}")
-            else:
-                rfm9x.send(bytes_msg)
-                print(f"Message {bold}{i+1}{normal}: Sent")
-            # time.sleep(1*(i+1))
-            time.sleep(5)
+                    rfm9x.send(bytes_msg)
+                    print(f"Message {bold}{i+1}{normal}: Sent")
+                # time.sleep(1*(i+1))
+                time.sleep(5)
 
-        repeat_str = get_input_discrete(
-            f"Repeat transmission? {bold}(y/n){normal}", ["y", "n"])
-        if repeat_str == "n":
-            break
+            repeat_str = get_input_discrete(
+                f"Repeat transmission? {bold}(y/n){normal}", ["y", "n"])
+            if repeat_str == "n":
+                break
