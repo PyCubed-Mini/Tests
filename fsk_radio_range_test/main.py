@@ -189,6 +189,7 @@ print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
 print(f"\tPreamble Length = {rfm9x.preamble_length}")
 print(f"\tReceive timeout = {timeout} s")
 print(f"\tAcknowledge delay = {rfm9x.ack_delay} s")
+print(f"\tAcknowledge wait = {rfm9x.ack_wait} s")
 
 while True:
 
