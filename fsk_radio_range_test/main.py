@@ -205,8 +205,13 @@ while True:
             try:
                 msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
                 if msg is not None:
-                    print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
-                          msg.decode("utf-8", "backslashreplace"))
+                    try:
+                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
+                              msg.decode("utf-8", "replace"))
+                    except UnicodeError:
+                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
+                              str(msg))
+
             except KeyboardInterrupt:
                 break
 
