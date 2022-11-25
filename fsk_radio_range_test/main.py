@@ -216,12 +216,12 @@ while True:
                 msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
                 if msg is not None:
                     try:
-                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
+                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error}| AFC: {rfm9x.afc_value})\t" +
                               msg.decode("utf-8", "strict"))
                     except UnicodeError:
                         try:
                             # try to replace before totally giving up on decoding
-                            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +
+                            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error}| AFC: {rfm9x.afc_value})\t{red}UnicodeError{normal}\t" +
                                   msg.decode("utf-8", "replace"))
                         except UnicodeError:
                             print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +

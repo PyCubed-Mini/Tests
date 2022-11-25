@@ -601,6 +601,21 @@ class RFM9x:
         return f_error
 
     @property
+    def afc_value(self):
+        """
+        The automatic frequency correction value 
+        """
+        msb = self._read_u8(_RH_RF95_REG_1B_AFC_MSB)
+        lsb = self._read_u8(_RH_RF95_REG_1C_AFC_LSB)
+
+        afc = twos_comp(
+            ((msb << 8) | lsb) & 0xFFFF,
+            16
+        )
+
+        return afc
+
+    @property
     def tx_power(self):
         """The transmit power in dBm. Can be set to a value from 5 to 23 for
         high power devices(RFM95/96/97/98, high_power=True) or -1 to 14 for low
@@ -650,7 +665,7 @@ class RFM9x:
     @property
     def rx_bandwidth(self):
         """
-        The receiver filter bandwidth in kHz. 
+        The receiver filter bandwidth in kHz.
         """
         # Defined using a mantissa and exponent(see table 40, pg 88 in Semtech Docs)
         mant_binary = self._bw_mantissa
