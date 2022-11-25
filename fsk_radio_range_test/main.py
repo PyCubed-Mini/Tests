@@ -175,7 +175,7 @@ print(f"\tBitrate = {rfm9x.bitrate} Hz")
 print(f"\tFrequency Deviation = {rfm9x.frequency_deviation}")
 print(f"\tRX filter bandwidth = {rfm9x.rx_bandwidth}")
 print(f"\tLNA Gain [max = 1, min = 6] = {rfm9x.lna_gain}")
-print(f"\tPreamble Length = {rfm9x.preamble_length} s")
+print(f"\tPreamble Length = {rfm9x.preamble_length}")
 print(f"\tTimeout = {timeout} s")
 
 mode_str = get_input_discrete(
@@ -197,7 +197,7 @@ if mode_str == "r":
         msg = rfm9x.receive(with_ack=ack, debug=True, timeout=timeout)
         if msg is not None:
             print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
-                  msg.decode("utf-8", errors="backslashreplace"))
+                  msg.decode("utf-8", "backslashreplace"))
 
 else:
     print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
