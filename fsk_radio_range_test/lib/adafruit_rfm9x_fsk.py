@@ -868,7 +868,6 @@ class RFM9x:
                 self.crc_error_count += 1
             else:
                 # Read the data from the FIFO.
-                # Read the length of the FIFO.
                 packet = bytearray(_MAX_FIFO_LENGTH)
                 # Read the packet.
                 packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
@@ -899,7 +898,7 @@ class RFM9x:
                     # send ACK unless this was an ACK or a broadcast
                     elif (
                         with_ack
-                        and ((packet[3] & _RH_FLAGS_ACK) == 0)
+                        and ((packet[4] & _RH_FLAGS_ACK) == 0)
                         and (packet[1] != _RH_BROADCAST_ADDRESS)
                     ):
                         # delay before sending Ack to give receiver a chance to get ready
