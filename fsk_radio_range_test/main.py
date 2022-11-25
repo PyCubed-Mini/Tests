@@ -207,10 +207,15 @@ while True:
                 if msg is not None:
                     try:
                         print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t" +
-                              msg.decode("utf-8", "replace"))
+                              msg.decode("utf-8", "strict"))
                     except UnicodeError:
-                        print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +
-                              str(msg))
+                        try:
+                            # try to replace before totally giving up on decoding
+                            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +
+                                  msg.decode("utf-8", "replace"))
+                        except UnicodeError:
+                            print(f"(RSSI: {rfm9x.last_rssi} | FEI: {rfm9x.frequency_error})\t{red}UnicodeError{normal}\t" +
+                                  str(msg))
 
             except KeyboardInterrupt:
                 break
