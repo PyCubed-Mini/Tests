@@ -877,7 +877,7 @@ class RFM9x:
                 if packet_length < 6:
                     if debug:
                         print(
-                            f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'backslashreplace')}")
+                            f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')}")
                     packet = None
                 else:
                     internal_packet_length = packet[0]
