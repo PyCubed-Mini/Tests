@@ -125,7 +125,6 @@ elif board_str == "f":
     CS.switch_to_output(value=True)
     RESET.switch_to_output(value=True)
 
-    raise ValueError("Feather: untested")
     print(f"{bold}{green}Feather{normal} selected")
 else:  # board_str == "r"
     # raspberry pi
@@ -155,7 +154,7 @@ rfm9x.frequency_deviation = 8000
 rfm9x.rx_bandwidth = 50.0
 timeout = 30
 rfm9x.preamble_length = 16
-rfm9x.ack_wait = 10
+rfm9x.ack_wait = 1.0
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",

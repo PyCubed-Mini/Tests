@@ -830,7 +830,6 @@ class RFM9x:
         # Enter idle mode to stop receiving other packets.
         self.idle()
         if not timed_out:
-            print("Received packet")
             if self.enable_crc and self.crc_error():
                 self.crc_error_count += 1
             else:
