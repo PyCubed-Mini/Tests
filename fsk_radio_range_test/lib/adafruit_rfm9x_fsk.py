@@ -906,8 +906,7 @@ class RFM9x:
                             time.sleep(self.ack_delay)
                         # send ACK packet to sender (data is b'!')
                         self.send(
-                            # b"!",
-                            b"123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                            b"!",
                             destination=packet[2],
                             node=packet[1],
                             identifier=packet[3],
