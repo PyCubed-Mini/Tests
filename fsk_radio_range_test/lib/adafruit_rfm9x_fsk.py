@@ -280,6 +280,8 @@ class RFM9x:
 
     lna_gain = _RegisterBits(_RH_RF95_REG_0C_LNA, offset=5, bits=3)
 
+    afc_enable = _RegisterBits(_RH_RF95_REG_0D_RX_CONFIG, offset=4, bits=1)
+
     modulation_shaping = _RegisterBits(
         _RH_RF95_REG_0A_PA_RAMP, offset=6, bits=2)
 

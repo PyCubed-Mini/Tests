@@ -166,7 +166,7 @@ if param_str == "y":
                                                [500, 300000], allow_default=True)
     rfm9x.frequency_deviation = set_param_from_input_range(rfm9x.frequency_deviation, f"Frequency deviation (currently {rfm9x.frequency_deviation})",
                                                            [600, 200000], allow_default=True)
-    rfm9x.rx_bandwidth = set_param_from_input_discrete(rfm9x.rx_bandwidth, f"Receiver filter bandwidth (currently {rfm9x.rx_bandwidth})",
+    rfm9x.rx_bandwidth = set_param_from_input_discrete(rfm9x.rx_bandwidth, f"Receiver filter bandwidth (single-sided, currently {rfm9x.rx_bandwidth})",
                                                        [f"{rfm9x._bw_bins_kHz[i]}" for i in range(len(rfm9x._bw_bins_kHz))], allow_default=True, type=float)
     rfm9x.lna_gain = set_param_from_input_discrete(rfm9x.lna_gain, f"LNA Gain - [max = 1, min = 6] (currently {rfm9x.lna_gain})",
                                                    [f"{i}" for i in range(1, 7)], allow_default=True)
@@ -178,6 +178,8 @@ if param_str == "y":
                                                  [0.0, 10.0], allow_default=True)
     rfm9x.ack_wait = set_param_from_input_range(rfm9x.ack_wait, f"Acknowledge RX Timeout (currently {rfm9x.ack_wait} s)",
                                                 [0.0, 100.0], allow_default=True)
+    rfm9x.afc_enable = set_param_from_input_discrete(rfm9x.afc_enable, f"Enable automatic frequency calibration (AFC) (currently {rfm9x.afc_enable})",
+                                                     ["0", "1"], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
@@ -190,6 +192,7 @@ print(f"\tPreamble Length = {rfm9x.preamble_length}")
 print(f"\tReceive timeout = {timeout} s")
 print(f"\tAcknowledge delay = {rfm9x.ack_delay} s")
 print(f"\tAcknowledge wait = {rfm9x.ack_wait} s")
+print(f"\tAFC enabled = {rfm9x.afc_enable}")
 
 while True:
 
