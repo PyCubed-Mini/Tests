@@ -16,12 +16,14 @@ blue = '\033[34m'
 
 # test messages - must be less than 59 bytes
 msg_1 = f"{bold}{yellow}111:{normal} Outer space exists beyond Earth."
-msg_2 = f"{bold}{yellow}222:{normal} A planet is an astronomical body."
+msg_2 = f"{bold}{green}222:{normal} A planet is an astronomical body."
 msg_3 = f"{bold}{yellow}333:{normal} A planet is large and rounded."
-msg_4 = f"{bold}{yellow}444:{normal} Planets are not stars."
+msg_4 = f"{bold}{green}444:{normal} Planets are not stars."
+msg_5 = f"{bold}{yellow}555:{normal} But, planets form around stars."
+msg_6 = f"{bold}{green}666:{normal} Planets form in protoplanetary disks."
 
 
-messages = [msg_1, msg_2, msg_3, msg_4]
+messages = [msg_1, msg_2, msg_3, msg_4, msg_5, msg_6]
 
 
 def get_input_discrete(prompt_str, choice_values):
