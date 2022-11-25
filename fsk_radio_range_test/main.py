@@ -42,7 +42,7 @@ def get_input_discrete(prompt_str, choice_values):
     return choice
 
 
-def set_param_from_input_discrete(param, prompt_str, choice_values, allow_default=False):
+def set_param_from_input_discrete(param, prompt_str, choice_values, allow_default=False, type=int):
 
     # add "enter" as a choice
     choice_values = [""] + choice_values if allow_default else choice_values
@@ -54,7 +54,7 @@ def set_param_from_input_discrete(param, prompt_str, choice_values, allow_defaul
     if choice == "":
         return param
     else:
-        return int(choice)
+        return type(choice)
 
 
 def is_number(s):
@@ -167,7 +167,7 @@ if param_str == "y":
     rfm9x.frequency_deviation = set_param_from_input_range(rfm9x.frequency_deviation, f"Frequency deviation (currently {rfm9x.frequency_deviation})",
                                                            [600, 200000], allow_default=True)
     rfm9x.rx_bandwidth = set_param_from_input_discrete(rfm9x.rx_bandwidth, f"Receiver filter bandwidth (currently {rfm9x.rx_bandwidth})",
-                                                       list(rfm9x._bw_bins_kHz), allow_default=True)
+                                                       [f"{rfm9x._bw_bins_kHz[i]}" for i in range(len(rfm9x._bw_bins_kHz))], allow_default=True, type=float)
     rfm9x.lna_gain = set_param_from_input_discrete(rfm9x.lna_gain, f"LNA Gain - [max = 1, min = 6] (currently {rfm9x.lna_gain})",
                                                    [f"{i}" for i in range(1, 7)], allow_default=True)
     rfm9x.preamble_length = set_param_from_input_range(rfm9x.preamble_length, f"Preamble length (currently {rfm9x.preamble_length})",
