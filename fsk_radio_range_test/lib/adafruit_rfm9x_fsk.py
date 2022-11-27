@@ -603,7 +603,7 @@ class RFM9x:
     @property
     def afc_value(self):
         """
-        The automatic frequency correction value 
+        The automatic frequency correction value
         """
         msb = self._read_u8(_RH_RF95_REG_1B_AFC_MSB)
         lsb = self._read_u8(_RH_RF95_REG_1C_AFC_LSB)
@@ -850,109 +850,118 @@ class RFM9x:
         The payload then begins at packet[4].
         If with_ack is True, send an ACK after receipt(Reliable Datagram mode)
         """
-        timed_out = False
+
         if timeout is None:
             timeout = self.receive_timeout
-        if timeout is not None:
-            # Wait for the payload_ready signal.  This is not ideal and will
-            # surely miss or overflow the FIFO when packets aren't read fast
-            # enough, however it's the best that can be done from Python without
-            # interrupt supports.
-            # Make sure we are listening for packets.
-            self.listen()
-            timed_out = False
-            if HAS_SUPERVISOR:
-                start = supervisor.ticks_ms()
-                while not timed_out and not self.rx_done():
-                    if ticks_diff(supervisor.ticks_ms(), start) >= timeout * 1000:
-                        timed_out = True
-            else:
-                start = time.monotonic()
-                while not timed_out and not self.rx_done():
-                    if time.monotonic() - start >= timeout:
-                        timed_out = True
-        # Payload ready is set, a packet is in the FIFO.
+
+        # get starting time
+        if HAS_SUPERVISOR:
+            start = supervisor.ticks_ms()
+        else:
+            start = time.monotonic()
+
         packet = None
-        # save last RSSI reading
-        self.last_rssi = self.rssi
-
-        if not timed_out:
-            # Enter idle mode to stop receiving other packets.
-            self.idle()
-            if self.enable_crc and not self.crc_ok():
-                if debug:
-                    print("RFM9X: CRC Error")
-                self.crc_error_count += 1
-            else:
-                # Read the data from the FIFO.
-                packet = bytearray(_MAX_FIFO_LENGTH)
-                # Read the packet.
-                packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
-
-                # Handle if the received packet is too small to include the 1 byte length, 4 byte
-                # RadioHead header and at least one byte of data --reject this packet and ignore it.
-                if packet_length < 6:
-                    if debug:
-                        try:
-                            print(
-                                f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')})")
-                        except UnicodeError:
-                            print(
-                                f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
-
-                    packet = None
-                else:
-                    internal_packet_length = packet[0]
-                    if internal_packet_length != packet_length - 1:
-                        if debug:
-                            print(
-                                f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length})")
-                        packet = None
-                    elif (
-                        self.node != _RH_BROADCAST_ADDRESS
-                        and packet[1] != _RH_BROADCAST_ADDRESS
-                        and packet[1] != self.node
-                    ):
-                        if debug:
-                            print(
-                                f"RFM9X: Incorrect Address (packet address = {packet[1]} != my address = {self.node}")
-                        packet = None
-                    # send ACK unless this was an ACK or a broadcast
-                    elif (
-                        with_ack
-                        and ((packet[4] & _RH_FLAGS_ACK) == 0)
-                        and (packet[1] != _RH_BROADCAST_ADDRESS)
-                    ):
-                        # delay before sending Ack to give receiver a chance to get ready
-                        if self.ack_delay is not None:
-                            time.sleep(self.ack_delay)
-                        # send ACK packet to sender (data is b'!')
-                        self.send(
-                            b"!",
-                            destination=packet[2],
-                            node=packet[1],
-                            identifier=packet[3],
-                            flags=(packet[4] | _RH_FLAGS_ACK),
-                        )
-                        # reject Retries if we have seen this idetifier from this source before
-                        # TODO: Does seen_ids ever get cleared?
-                        if (self.seen_ids[packet[2]] == packet[3]) and (
-                            packet[4] & _RH_FLAGS_RETRY
-                        ):
-                            if debug:
-                                print(f"RFM9X: dropping retried packet")
-                            packet = None
-                        else:  # save the packet identifier for this source
-                            self.seen_ids[packet[2]] = packet[3]
-                    if (
-                        not with_header and packet is not None
-                    ):  # skip the header if not wanted
-                        packet = packet[5:]
-            # Listen again if necessary and return the result packet.
-            if keep_listening:
+        # Make sure we are listening for packets.
+        self.listen()
+        while True:
+            # check for valid packets
+            if self.rx_done():
+                # save last RSSI reading
+                self.last_rssi = self.rssi
+                # Enter idle mode to stop receiving other packets.
+                self.idle()
+                # read packet
+                packet = self._process_packet(with_header=with_header, with_ack=with_ack, debug=debug)
+                if packet is not None:
+                    break  # packet valid - return it
+                # packet invalid - continue listening
                 self.listen()
 
-        if not keep_listening:
-            # Enter idle mode to stop receiving other packets.
+            # check if we have timed out
+            if ((HAS_SUPERVISOR and (ticks_diff(supervisor.ticks_ms(), start) >= timeout * 1000))
+                    or
+                    (not HAS_SUPERVISOR and (time.monotonic() - start >= timeout))):
+                # timed out
+                if debug:
+                    print("RFM9X: RX timed out")
+                break
+
+        # Exit
+        if keep_listening:
+            self.listen()
+        else:
             self.idle()
+
+        return packet
+
+    def _process_packet(self, with_header=False, with_ack=False, debug=False):
+
+        # Reject if the packet did not pass the radio CRC
+        if self.enable_crc and not self.crc_ok():
+            if debug:
+                print("RFM9X: CRC Error")
+            self.crc_error_count += 1
+            return None
+
+        # Read the data from the radio FIFO
+        packet = bytearray(_MAX_FIFO_LENGTH)
+        packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
+
+        # Reject if the received packet is too small to include the 1 byte length, the
+        # 4 byte RadioHead header and at least one byte of data
+        if packet_length < 6:
+            if debug:
+                try:
+                    print(
+                        f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')})")
+                except UnicodeError:
+                    print(
+                        f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
+            return None
+
+        # Reject if the length recorded in the packet doesn't match the amount of data we got
+        internal_packet_length = packet[0]
+        if internal_packet_length != packet_length - 1:
+            if debug:
+                print(
+                    f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length})")
+            return None
+
+        # Reject if the packet wasn't sent to my address
+        if (self.node != _RH_BROADCAST_ADDRESS
+                and packet[1] != _RH_BROADCAST_ADDRESS
+                and packet[1] != self.node):
+            if debug:
+                print(
+                    f"RFM9X: Incorrect Address (packet address = {packet[1]} != my address = {self.node}")
+            return None
+
+        # send ACK unless this was an ACK or a broadcast
+        if (with_ack
+                and ((packet[4] & _RH_FLAGS_ACK) == 0)
+                and (packet[1] != _RH_BROADCAST_ADDRESS)):
+            # delay before sending Ack to give receiver a chance to get ready
+            if self.ack_delay is not None:
+                time.sleep(self.ack_delay)
+            # send ACK packet to sender (data is b'!')
+            self.send(
+                b"!",
+                destination=packet[2],
+                node=packet[1],
+                identifier=packet[3],
+                flags=(packet[4] | _RH_FLAGS_ACK),
+            )
+            # reject this packet if its identifier was the most recent one from its source
+            # TODO: Make sure identifiers are being changed for each packet
+            if (self.seen_ids[packet[2]] == packet[3]) and (
+                    packet[4] & _RH_FLAGS_RETRY):
+                if debug:
+                    print(f"RFM9X: dropping retried packet")
+                return None
+            else:  # save the packet identifier for this source
+                self.seen_ids[packet[2]] = packet[3]
+
+        if (not with_header):  # skip the header if not wanted
+            packet = packet[5:]
+
         return packet
