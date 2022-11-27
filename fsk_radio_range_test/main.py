@@ -79,7 +79,7 @@ def get_input_range(prompt_str, choice_range):
         if not is_number(choice):
             continue
 
-        if float(choice) > choice_range[0] and float(choice) < choice_range[1]:
+        if float(choice) >= choice_range[0] and float(choice) <= choice_range[1]:
             break
     return choice
 
