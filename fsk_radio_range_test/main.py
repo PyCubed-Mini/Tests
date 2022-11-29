@@ -37,6 +37,8 @@ def get_input_discrete(prompt_str, choice_values):
             choice_values_str += ", "
     choice_values_str += ")"
 
+    choice_values = [cv.lower() for cv in choice_values]
+
     while choice not in choice_values:
         choice = input(f"{choice_values_str} ~> ").lower()
     return choice
