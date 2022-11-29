@@ -144,6 +144,18 @@ rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
 if board_str == "s":
     rfm9x.dio0 = radio_DIO0
 
+node_str = get_input_discrete(
+    f"Node {bold}A{normal} or {bold}B{normal}",
+    ["A", "B"]
+)
+
+if node_str == "A":
+    rfm9x.node = 0xAA
+    rfm9x.destination = 0xBB
+else:
+    rfm9x.destination = 0xAA
+    rfm9x.node = 0xBB
+
 # RFM radio configuration
 
 param_str = get_input_discrete(
@@ -184,6 +196,7 @@ if param_str == "y":
                                                      ["0", "1"], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
+print(f"\tNode addr = {rfm9x.node}\tDest addr = {rfm9x.destination}")
 print(f"\tFrequency = {rfm9x.frequency_mhz} MHz")
 print(f"\tPower = {rfm9x.tx_power} dBm")
 print(f"\tBitrate = {rfm9x.bitrate} Hz")
