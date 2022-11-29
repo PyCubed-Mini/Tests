@@ -282,6 +282,9 @@ class RFM9x:
 
     afc_enable = _RegisterBits(_RH_RF95_REG_0D_RX_CONFIG, offset=4, bits=1)
 
+    tx_start_condition = _RegisterBits(_RH_RF95_REG_35_FIFO_THRESH, offset=7, bits=1)
+    fifo_threshold = _RegisterBits(_RH_RF95_REG_35_FIFO_THRESH, offset=0, bits=6)
+
     modulation_shaping = _RegisterBits(
         _RH_RF95_REG_0A_PA_RAMP, offset=6, bits=2)
 
@@ -365,6 +368,8 @@ class RFM9x:
         self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
         self.address_filtering = 0b00  # no address filtering - handled in software
         self.data_mode = 0b1  # packet mode
+
+        self.tx_start_condition = 0b1  # start transmitting when first byte enters FIFO
 
         self.tx_power = 13  # 13 dBm is a safe value any module support
 
