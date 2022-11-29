@@ -165,11 +165,12 @@ param_str = get_input_discrete(
 rfm9x.frequency_mhz = 433.0
 rfm9x.tx_power = 23
 rfm9x.bitrate = 1200
-rfm9x.frequency_deviation = 8000
-rfm9x.rx_bandwidth = 50.0
-timeout = 30
+rfm9x.frequency_deviation = 10000
+rfm9x.rx_bandwidth = 25.0
+timeout = 10
 rfm9x.preamble_length = 16
-rfm9x.ack_wait = 10
+rfm9x.ack_delay = 0.2
+rfm9x.ack_wait = 5
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
