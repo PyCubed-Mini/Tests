@@ -916,12 +916,7 @@ class RFM9x:
         # 4 byte RadioHead header and at least one byte of data
         if packet_length < 6:
             if debug:
-                try:
-                    print(
-                        f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {packet.decode('utf-8', 'replace')})")
-                except UnicodeError:
-                    print(
-                        f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
+                print(f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
             return None
 
         # Reject if the length recorded in the packet doesn't match the amount of data we got
@@ -929,7 +924,7 @@ class RFM9x:
         if internal_packet_length != packet_length - 1:
             if debug:
                 print(
-                    f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length})")
+                    f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length}), packet = {str(packet)}")
             return None
 
         # Reject if the packet wasn't sent to my address
@@ -938,7 +933,7 @@ class RFM9x:
                 and packet[1] != self.node):
             if debug:
                 print(
-                    f"RFM9X: Incorrect Address (packet address = {packet[1]} != my address = {self.node}")
+                    f"RFM9X: Incorrect Address (packet address = {packet[1]} != my address = {self.node}, packet = {str(packet)}")
             return None
 
         # send ACK unless this was an ACK or a broadcast
@@ -961,7 +956,7 @@ class RFM9x:
             if (self.seen_ids[packet[2]] == packet[3]) and (
                     packet[4] & _RH_FLAGS_RETRY):
                 if debug:
-                    print(f"RFM9X: dropping retried packet")
+                    print(f"RFM9X: dropping retried packet, packet = {str(packet)}")
                 return None
             else:  # save the packet identifier for this source
                 self.seen_ids[packet[2]] = packet[3]
