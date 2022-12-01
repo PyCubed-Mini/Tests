@@ -127,7 +127,6 @@ elif board_str == "f":
     CS.switch_to_output(value=True)
     RESET.switch_to_output(value=True)
 
-    raise ValueError("Feather: untested")
     print(f"{bold}{green}Feather{normal} selected")
 else:  # board_str == "r"
     # raspberry pi
@@ -140,7 +139,7 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
-rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
+rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=True)
 if board_str == "s":
     rfm9x.dio0 = radio_DIO0
 

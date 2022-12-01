@@ -294,6 +294,7 @@ class RFM9x:
     crc_auto_clear = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
     address_filtering = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
     data_mode = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=6, bits=1)
+    crc_whitening_type = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=0, bits=1)
 
     _bw_mantissa = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=3, bits=2)
     _bw_exponent = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=0, bits=3)
@@ -364,10 +365,10 @@ class RFM9x:
         self.packet_format = 0b1  # variable length packets
         self.dc_free = 0b01  # Manchester coding
         self.crc_on = crc
-        self.enable_crc = crc
         self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
         self.address_filtering = 0b00  # no address filtering - handled in software
         self.data_mode = 0b1  # packet mode
+        self.crc_whitening_type = 0b0  # default CCITT CRC implementation with standard whitening
 
         self.tx_start_condition = 0b1  # start transmitting when first byte enters FIFO
 
@@ -709,7 +710,7 @@ class RFM9x:
 
     def crc_ok(self):
         """crc status"""
-        return (self._read_u8(_RH_RF95_REG_3F_IRQ_FLAGS_2) & 0b0010) >> 1
+        return (self._read_u8(_RH_RF95_REG_3F_IRQ_FLAGS_2) & (0b1 << 1)) >> 1
 
     def fifo_empty(self):
         """True when FIFO is empty"""
@@ -902,9 +903,12 @@ class RFM9x:
     def _process_packet(self, with_header=False, with_ack=False, debug=False):
 
         # Reject if the packet did not pass the radio CRC
-        if self.enable_crc and not self.crc_ok():
+        if self.crc_on and not self.crc_ok():
             if debug:
                 print("RFM9X: CRC Error")
+                packet = bytearray(_MAX_FIFO_LENGTH)
+                packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
+                print(f'Got packet: {str(packet)}')
             self.crc_error_count += 1
             return None
 
@@ -914,6 +918,7 @@ class RFM9x:
 
         # Reject if the received packet is too small to include the 1 byte length, the
         # 4 byte RadioHead header and at least one byte of data
+        # TODO: shouldn't this be 5
         if packet_length < 6:
             if debug:
                 print(f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
