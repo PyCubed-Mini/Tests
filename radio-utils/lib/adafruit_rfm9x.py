@@ -30,7 +30,9 @@ __version__ = "2.2.3"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_RFM9x.git"
 
 # Internal constants:
-# Register names (FSK Mode even though we use LoRa instead, from table 85)
+# Register names from table 85 of the HOPERF RF96/97/98 datasheet
+
+# Shared registers
 _RH_RF95_REG_00_FIFO = const(0x00)
 _RH_RF95_REG_01_OP_MODE = const(0x01)
 _RH_RF95_REG_06_FRF_MSB = const(0x06)
@@ -40,6 +42,66 @@ _RH_RF95_REG_09_PA_CONFIG = const(0x09)
 _RH_RF95_REG_0A_PA_RAMP = const(0x0A)
 _RH_RF95_REG_0B_OCP = const(0x0B)
 _RH_RF95_REG_0C_LNA = const(0x0C)
+
+_RH_RF95_REG_40_DIO_MAPPING1 = const(0x40)
+_RH_RF95_REG_41_DIO_MAPPING2 = const(0x41)
+_RH_RF95_REG_42_VERSION = const(0x42)
+
+# FSK / OOK registers
+_BITRATE_MSB = const(0x02)
+_BITRATE_LSB = const(0x03)
+_FDEV_MSB = const(0x04)
+_FDEB_LSB = const(0x05)
+_RX_CONFIG = const(0x0D)
+_RSSI_CONFIG = const(0x0E)
+_RSSI_COLLISION = const(0x0F)
+_RSSI_THRESH = const(0x10)
+_RSSI_VALUE = const(0x11)
+_RX_BW = const(0x12)
+_AFC_BW = const(0x13)
+_OOK_PEAK = const(0x14)
+_OOK_FIX = const(0x15)
+_OOK_AVG = const(0x16)
+_AFC_FEI = const(0x1A)
+_AFC_MSB = const(0x1B)
+_AFC_LSB = const(0x1C)
+_FEIL_MSB = const(0x1D)
+_FEIL_LSB = const(0x1E)
+_PREAMBLE_DETECT = const(0x1F)
+_RX_TIMEOUT1 = const(0x20)
+_RX_TIMEOUT2 = const(0x21)
+_RX_TIMEOUT3 = const(0x22)
+_RX_DELAY = const(0x23)
+_OSC = const(0x24)
+_PREAMBLE_MSB = const(0x25)
+_PREAMBLE_LSB = const(0x26)
+_SYNC_CONFIG = const(0x27)
+_SYNC_VALUE1 = const(0x28)
+_SYNC_VALUE2 = const(0x29)
+_SYNC_VALUE3 = const(0x2a)
+_SYNC_VALUE4 = const(0x2b)
+_SYNC_VALUE5 = const(0x2c)
+_SYNC_VALUE6 = const(0x2d)
+_SYNC_VALUE7 = const(0x2e)
+_SYNC_VALUE8 = const(0x2f)
+_PACKET_CONFIG1 = const(0x30)
+_PACKET_CONFIG2 = const(0x31)
+_PAYLOAD_LENGTH = const(0x32)
+_NODE_ADRS = const(0x33)
+_BROADCAST_ADRS = const(0x34)
+_FIFO_THRESH = const(0x35)
+_SEQ_CONFIG1 = const(0x36)
+_SEQ_CONFIG2 = const(0x37)
+_TIMER_RESOL = const(0x38)
+_TIMER_1_COEF = const(0x39)
+_TIMER_2_COEF = const(0x3a)
+_IMAGE_CAL = const(0x3b)
+_TEMP = const(0x3c)
+_LOW_BAT = const(0x3d)
+_IRQ_FLAGS1 = const(0x3e)
+_IRQ_FLAGS2 = const(0x3f)
+
+# LoRa TM Mode (From table in section 6.4 of the datasheet)
 _RH_RF95_REG_0D_FIFO_ADDR_PTR = const(0x0D)
 _RH_RF95_REG_0E_FIFO_TX_BASE_ADDR = const(0x0E)
 _RH_RF95_REG_0F_FIFO_RX_BASE_ADDR = const(0x0F)
@@ -66,11 +128,9 @@ _RH_RF95_REG_23_MAX_PAYLOAD_LENGTH = const(0x23)
 _RH_RF95_REG_24_HOP_PERIOD = const(0x24)
 _RH_RF95_REG_25_FIFO_RX_BYTE_ADDR = const(0x25)
 _RH_RF95_REG_26_MODEM_CONFIG3 = const(0x26)
+_RH_RF95_REG_44_PLL_HOP = const(0x44)
 
-_RH_RF95_REG_40_DIO_MAPPING1 = const(0x40)
-_RH_RF95_REG_41_DIO_MAPPING2 = const(0x41)
-_RH_RF95_REG_42_VERSION = const(0x42)
-
+# TODO:
 _RH_RF95_REG_4B_TCXO = const(0x4B)
 _RH_RF95_REG_4D_PA_DAC = const(0x4D)
 _RH_RF95_REG_5B_FORMER_TEMP = const(0x5B)
@@ -716,7 +776,7 @@ class RFM9x:
             payload[3] = flags
         payload = payload + data
         # Write payload.
-        self._write_from(_RH_RF95_REG_00_FIFO, payload)
+        self._write_from(_FIFO, payload)
         # Write payload and header length.
         self._write_u8(_RH_RF95_REG_22_PAYLOAD_LENGTH, len(payload))
         # Turn on transmit mode to send out the packet.
@@ -843,7 +903,7 @@ class RFM9x:
                     self._write_u8(_RH_RF95_REG_0D_FIFO_ADDR_PTR, current_addr)
                     packet = bytearray(fifo_length)
                     # Read the packet.
-                    self._read_into(_RH_RF95_REG_00_FIFO, packet)
+                    self._read_into(_FIFO, packet)
                 # Clear interrupt.
                 self._write_u8(_RH_RF95_REG_12_IRQ_FLAGS, 0xFF)
                 if fifo_length < 5:
