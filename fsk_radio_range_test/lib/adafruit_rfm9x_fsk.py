@@ -293,7 +293,7 @@ class RFM9x:
     crc_on = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=4, bits=1)
     crc_auto_clear = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
     address_filtering = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
-    crc_whitening = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=0, bits=0)
+    crc_whitening = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=0, bits=1)
     data_mode = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=6, bits=1)
 
     _bw_mantissa = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=3, bits=2)
@@ -365,7 +365,6 @@ class RFM9x:
         self.packet_format = 0b1  # variable length packets
         self.dc_free = 0b01  # Manchester coding
         self.crc_on = crc
-        self.enable_crc = crc
         self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
         self.crc_whitening = 0b0  # use CCITT CRC - IBM not supported (see errata)
         self.address_filtering = 0b00  # no address filtering - handled in software
@@ -903,16 +902,21 @@ class RFM9x:
 
     def _process_packet(self, with_header=False, with_ack=False, debug=False):
 
-        # Reject if the packet did not pass the radio CRC
-        if self.enable_crc and not self.crc_ok():
-            if debug:
-                print("RFM9X: CRC Error")
-            self.crc_error_count += 1
-            return None
+        # check for CRC error before reading data (flag is cleared when FIFO is read)
+        crc_error = False
+        if self.crc_on and not self.crc_ok():
+            crc_error = True
 
         # Read the data from the radio FIFO
         packet = bytearray(_MAX_FIFO_LENGTH)
         packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
+
+        # Reject if the packet did not pass the radio CRC
+        if crc_error:
+            if debug:
+                print(f"RFM9X: CRC Error, packet = {str(packet)}")
+            self.crc_error_count += 1
+            return None
 
         # Reject if the received packet is too small to include the 1 byte length, the
         # 4 byte RadioHead header and at least one byte of data

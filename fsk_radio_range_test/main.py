@@ -127,7 +127,6 @@ elif board_str == "f":
     CS.switch_to_output(value=True)
     RESET.switch_to_output(value=True)
 
-    raise ValueError("Feather: untested")
     print(f"{bold}{green}Feather{normal} selected")
 else:  # board_str == "r"
     # raspberry pi
