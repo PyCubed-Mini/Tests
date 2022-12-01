@@ -908,25 +908,29 @@ class RFM9x:
                 print("RFM9X: CRC Error")
                 packet = bytearray(_MAX_FIFO_LENGTH)
                 packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
-                print(f'Got packet: {str(packet)}')
+                if packet[0] != 0:
+                    print(f"RFM9X Packet: {str(packet)}")
             self.crc_error_count += 1
             return None
 
         # Read the data from the radio FIFO
-        packet = bytearray(_MAX_FIFO_LENGTH)
+        internal_packet_length = self._read_u8(_RH_RF95_REG_00_FIFO)
+        if internal_packet_length == 0:
+            if debug:
+                print("RFM9X: Empty packet")
+            return None
+        packet = bytearray(internal_packet_length)
         packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
 
         # Reject if the received packet is too small to include the 1 byte length, the
         # 4 byte RadioHead header and at least one byte of data
-        # TODO: shouldn't this be 5
         if packet_length < 6:
             if debug:
                 print(f"RFM9X: Incomplete message (packet_length = {packet_length} < 6, packet = {str(packet)})")
             return None
 
         # Reject if the length recorded in the packet doesn't match the amount of data we got
-        internal_packet_length = packet[0]
-        if internal_packet_length != packet_length - 1:
+        if internal_packet_length != packet_length:
             if debug:
                 print(
                     f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length}), packet = {str(packet)}")
