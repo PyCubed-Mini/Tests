@@ -293,6 +293,7 @@ class RFM9x:
     crc_on = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=4, bits=1)
     crc_auto_clear = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=3, bits=1)
     address_filtering = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=1, bits=2)
+    crc_whitening = _RegisterBits(_RH_RF95_REG_30_PKT_CONFIG_1, offset=0, bits=0)
     data_mode = _RegisterBits(_RH_RF95_REG_31_PKT_CONFIG_2, offset=6, bits=1)
 
     _bw_mantissa = _RegisterBits(_RH_RF95_REG_12_RX_BW, offset=3, bits=2)
@@ -366,6 +367,7 @@ class RFM9x:
         self.crc_on = crc
         self.enable_crc = crc
         self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
+        self.crc_whitening = 0b0  # use CCITT CRC - IBM not supported (see errata)
         self.address_filtering = 0b00  # no address filtering - handled in software
         self.data_mode = 0b1  # packet mode
 
