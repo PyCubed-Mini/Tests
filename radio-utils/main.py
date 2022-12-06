@@ -7,43 +7,140 @@ from lib.command_map import commands
 from radio_utils.chunk import ChunkMessage
 from radio_utils import headers
 
-import adafruit_rfm9x
+import adafruit_rfm9x_fsk
+
+# print formatters
+bold = '\033[1m'
+normal = '\033[0m'
+red = '\033[31m'
+green = '\033[32m'
+yellow = '\033[33m'
+blue = '\033[34m'
 
 
-# Define radio parameters.
-RADIO_FREQ_MHZ = 433.0  # Frequency of the radio in Mhz. Must match your
-# module! Can be a value like 915.0, 433.0, etc.
+def get_input_discrete(prompt_str, choice_values):
+    print(prompt_str)
+    choice = None
 
-# Define pins connected to the chip, use these if wiring up the breakout according to the guide:
-CS = digitalio.DigitalInOut(board.D5)
-RESET = digitalio.DigitalInOut(board.D6)
-# Or uncomment and instead use these if using a Feather M0 RFM9x board and the appropriate
-# CircuitPython build:
-# CS = digitalio.DigitalInOut(board.RFM9X_CS)
-# RESET = digitalio.DigitalInOut(board.RFM9X_RST)
+    choice_values_str = "("
+    for i, _ in enumerate(choice_values):
+        choice_values_str += f"{choice_values[i]}"
+        if i < len(choice_values) - 1:
+            choice_values_str += ", "
+    choice_values_str += ")"
 
-# Define the onboard LED
-LED = digitalio.DigitalInOut(board.D13)
-LED.direction = digitalio.Direction.OUTPUT
+    choice_values = [cv.lower() for cv in choice_values]
+
+    while choice not in choice_values:
+        choice = input(f"{choice_values_str} ~> ").lower()
+    return choice
+
+
+def set_param_from_input_discrete(param, prompt_str, choice_values, allow_default=False, type=int):
+
+    # add "enter" as a choice
+    choice_values = [""] + choice_values if allow_default else choice_values
+    prompt_str = prompt_str + \
+        " (enter to skip):" if allow_default else prompt_str
+
+    choice = get_input_discrete(prompt_str, choice_values)
+
+    if choice == "":
+        return param
+    else:
+        return type(choice)
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def get_input_range(prompt_str, choice_range):
+    print(prompt_str)
+    choice = None
+
+    choice_range_str = f"({choice_range[0]} - {choice_range[1]})"
+
+    while True:
+        choice = input(f"{choice_range_str} ~> ").lower()
+        if choice == "":
+            break
+
+        if not is_number(choice):
+            continue
+
+        if float(choice) >= choice_range[0] and float(choice) <= choice_range[1]:
+            break
+    return choice
+
+
+def set_param_from_input_range(param, prompt_str, choice_range, allow_default=False):
+
+    # add "enter" as a choice
+    prompt_str = prompt_str + \
+        " (enter to skip):" if allow_default else prompt_str
+
+    choice = get_input_range(prompt_str, choice_range)
+
+    if choice == "":
+        return param
+    else:
+        return float(choice)
+
+
+print(f"\n{bold}{yellow}Radio GS Terminal{normal}\n")
+
+board_str = get_input_discrete(
+    f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
+    ["s", "f", "r"]
+)
+
+if board_str == "s":
+    # pocketqube
+    CS = digitalio.DigitalInOut(board.RF_CS)
+    RESET = digitalio.DigitalInOut(board.RF_RST)
+    CS.switch_to_output(value=True)
+    RESET.switch_to_output(value=True)
+
+    radio_DIO0 = digitalio.DigitalInOut(board.RF_IO0)
+    radio_DIO0.switch_to_input()
+    radio_DIO1 = digitalio.DigitalInOut(board.RF_IO1)
+    radio_DIO1.switch_to_input()
+
+    print(f"{bold}{green}Satellite{normal} selected")
+elif board_str == "f":
+    # feather
+    CS = digitalio.DigitalInOut(board.D5)
+    RESET = digitalio.DigitalInOut(board.D6)
+    CS.switch_to_output(value=True)
+    RESET.switch_to_output(value=True)
+
+    print(f"{bold}{green}Feather{normal} selected")
+else:  # board_str == "r"
+    # raspberry pi
+    CS = digitalio.DigitalInOut(board.CE1)
+    RESET = digitalio.DigitalInOut(board.D25)
+    print(f"{bold}{green}Raspberry Pi{normal} selected")
 
 # Initialize SPI bus.
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 
 # Initialze RFM radio
-rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ)
+RADIO_FREQ_MHZ = 433.0
+rfm9x = adafruit_rfm9x_fsk.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
 
-# Note that the radio is configured in LoRa mode so you can't control sync
-# word, encryption, frequency deviation, or other settings!
-
-# You can however adjust the transmit power (in dB).  The default is 13 dB but
-# high power radios like the RFM95 can go up to 23 dB:
+# configure for FSK
 rfm9x.tx_power = 23
-
-# Send a packet.  Note you can only send a packet up to 252 bytes in length.
-# This is a limitation of the radio packet size, so if you need to send larger
-# amounts of data you will need to break it into smaller send calls.  Each send
-# call will wait for the previous one to finish before continuing.
-# rfm9x.send(bytes("Hello world!\r\n", "utf-8"))
+rfm9x.bitrate = 2400
+rfm9x.frequency_deviation = 10000
+rfm9x.rx_bandwidth = 25.0
+rfm9x.preamble_length = 16
+rfm9x.ack_delay = 0.2
+rfm9x.ack_wait = 5
 
 # set node/destination
 rfm9x.node = 0xBA
