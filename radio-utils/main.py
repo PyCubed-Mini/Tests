@@ -7,7 +7,7 @@ from lib.command_map import commands
 from radio_utils.chunk import ChunkMessage
 from radio_utils import headers
 
-import adafruit_rfm9x_fsk
+import pycubed_rfm9x_fsk
 
 # print formatters
 bold = '\033[1m'
@@ -131,7 +131,7 @@ spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
-rfm9x = adafruit_rfm9x_fsk.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
+rfm9x = pycubed_rfm9x_fsk.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, checksum=True)
 
 # configure for FSK
 rfm9x.tx_power = 23
@@ -139,7 +139,7 @@ rfm9x.bitrate = 2400
 rfm9x.frequency_deviation = 10000
 rfm9x.rx_bandwidth = 25.0
 rfm9x.preamble_length = 16
-rfm9x.ack_delay = 0.2
+rfm9x.ack_delay = 1.0
 rfm9x.ack_wait = 5
 
 # set node/destination
@@ -160,7 +160,7 @@ while True:
             print(f"Sending packet: {debug_packet}, with_ack: {with_ack}")
 
             if with_ack:
-                if rfm9x.send_with_ack(packet):
+                if rfm9x.send_with_ack(packet, debug=True):
                     print('ack')
                     msg.ack()
                 else:
@@ -176,7 +176,7 @@ while True:
         comand_bytes, will_respond = commands[input('command=')]
         args = input('arguments=')
         msg = bytes([headers.COMMAND]) + config.secret_code + comand_bytes + bytes(args, 'utf-8')
-        while not rfm9x.send_with_ack(msg):
+        while not rfm9x.send_with_ack(msg, debug=True):
             print('Failed to send command')
             pass
         print('Successfully sent command')

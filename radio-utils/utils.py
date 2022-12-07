@@ -4,10 +4,10 @@ from radio_utils import headers
 def receive(rfm9x, with_ack=True):
     """Recieve a packet.  Returns None if no packet was received.
     Otherwise returns (header, payload)"""
-    packet = rfm9x.receive(with_ack=with_ack, with_header=True)
+    packet = rfm9x.receive(with_ack=with_ack, with_header=True, debug=True)
     if packet is None:
         return None
-    return packet[0:5], packet[5:]
+    return packet[0:6], packet[6:]
 
 
 def print_res(res):
@@ -16,11 +16,12 @@ def print_res(res):
     else:
         header, payload = res
         print("Received (raw header):", [hex(x) for x in header])
-        if header[4] == headers.DEFAULT:
+        if header[5] == headers.DEFAULT:
             print('Received beacon')
         else:
             packet_text = str(payload, "utf-8")
             print(packet_text)
+
 
 class _data:
 
@@ -30,6 +31,7 @@ class _data:
         self.cmsg = bytes([])
         self.cmsg_last = bytes([])
 
+
 def read_loop(rfm9x):
     data = _data()
 
@@ -38,8 +40,8 @@ def read_loop(rfm9x):
         if res is None:
             continue
         header, payload = res
-        
-        oh = header[4]
+
+        oh = header[5]
         if oh == headers.DEFAULT:
             print(payload)
         elif oh == headers.NAIVE_START or oh == headers.NAIVE_MID or oh == headers.NAIVE_END:
@@ -65,6 +67,7 @@ def handle_naive(header, data, response):
         data.msg = str(data.msg, 'utf-8')
         print(data.msg)
 
+
 def handle_chunk(header, data, response):
     if header == headers.CHUNK_START:
         data.cmsg = response
@@ -75,7 +78,7 @@ def handle_chunk(header, data, response):
         else:
             data.debug('Repeated chunk')
         data.cmsg_last = response
-    
+
     if header == headers.CHUNK_END:
         data.ccmsg_last = bytes([])
         data.cmsg = str(data.cmsg, 'utf-8')
