@@ -103,43 +103,75 @@ def set_param_from_input_range(param, prompt_str, choice_range, allow_default=Fa
 print(f"\n{bold}{yellow}Radio Range Test{normal}\n")
 
 board_str = get_input_discrete(
-    f"Select the board {bold}(s){normal}atellite, {bold}(f){normal}eather, {bold}(r){normal}aspberry pi",
-    ["s", "f", "r"]
+    f"""Select the board/radio:
+        {bold}(s){normal} satellite,
+        {bold}(f){normal} feather,
+        {bold}(p){normal} raspberry pi,
+        {bold}(t){normal} RPiGS TX,
+        {bold}(r){normal} RPiGS RX,
+        """,
+    ["s", "f", "p", "t", "r"]
 )
 
+def feather_spi_config():
+    # feather
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+
+    cs = digitalio.DigitalInOut(board.D5)
+    reset = digitalio.DigitalInOut(board.D6)
+    cs.switch_to_output(value=True)
+    reset.switch_to_output(value=True)
+
+    return spi, cs, reset
+
+
+def pi_spi_config():
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+
+    cs = digitalio.DigitalInOut(board.ce1)
+    reset = digitalio.DigitalInOut(board.d25)
+
+    return spi, cs, reset
+
+
+def rpigs_tx_spi_config():
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+
+    cs = digitalio.DigitalInOut(board.D7)
+    reset = digitalio.DigitalInOut(board.D25)
+
+    return spi, cs, reset
+
+
+def rpigs_rx_spi_config():
+    spi = busio.SPI(board.SCK_1, MOSI=board.MOSI_1, MISO=board.MISO_1)
+
+    cs = digitalio.DigitalInOut(board.D16)
+    reset = digitalio.DigitalInOut(board.D24)
+
+    return spi, cs, reset
+
 if board_str == "s":
-    # pocketqube
-    CS = digitalio.DigitalInOut(board.RF_CS)
-    RESET = digitalio.DigitalInOut(board.RF_RST)
-    CS.switch_to_output(value=True)
-    RESET.switch_to_output(value=True)
-
-    radio_DIO0 = digitalio.DigitalInOut(board.RF_IO0)
-    radio_DIO0.switch_to_input()
-    radio_DIO1 = digitalio.DigitalInOut(board.RF_IO1)
-    radio_DIO1.switch_to_input()
-
+    spi, cs, reset = satellite_spi_config()
     print(f"{bold}{green}Satellite{normal} selected")
 elif board_str == "f":
-    # feather
-    CS = digitalio.DigitalInOut(board.D5)
-    RESET = digitalio.DigitalInOut(board.D6)
-    CS.switch_to_output(value=True)
-    RESET.switch_to_output(value=True)
-
+    spi, cs, reset = feather_spi_config()
     print(f"{bold}{green}Feather{normal} selected")
-else:  # board_str == "r"
-    # raspberry pi
-    CS = digitalio.DigitalInOut(board.CE1)
-    RESET = digitalio.DigitalInOut(board.D25)
+elif board_str == "p":
+    spi, cs, reset = pi_spi_config()
     print(f"{bold}{green}Raspberry Pi{normal} selected")
-
-# Initialize SPI bus.
-spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+elif board_str == "t":
+    spi, cs, reset = rpigs_tx_spi_config()
+    print(f"{bold}{green}Raspberry Pi{normal} selected")
+elif board_str == "r":
+    spi, cs, reset = rpigs_rx_spi_config()
+    print(f"{bold}{green}Raspberry Pi{normal} selected")
+else:
+    raise ValueError(f"Board string {board_str} invalid")
 
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
-rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, RADIO_FREQ_MHZ, crc=False)
+rfm9x = adafruit_rfm9x.RFM9x(spi, cs, reset, RADIO_FREQ_MHZ, crc=False)
 if board_str == "s":
     rfm9x.dio0 = radio_DIO0
 
