@@ -11,6 +11,9 @@ adapted from the Radiohead library RF95 code from:
 http: www.airspayce.com/mikem/arduino/RadioHead/
 
 * Author(s): Tony DiCola, Jerry Needell
+
+====================================================
+Modified to use FSK in 2022 by Jacob Willis
 """
 import random
 import time
@@ -21,13 +24,11 @@ HAS_SUPERVISOR = False
 
 try:
     import supervisor
-
     if hasattr(supervisor, "ticks_ms"):
         HAS_SUPERVISOR = True
 except ImportError:
     pass
-__version__ = "2.2.3"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_RFM9x.git"
+
 
 # Internal constants:
 # Register names
@@ -195,7 +196,7 @@ class RFM9x:
     - baudrate: Baud rate of the SPI connection, default is 10mhz but you might
     choose to lower to 1mhz if using long wires or a breadboard.
     - agc: Boolean to Enable/Disable Automatic Gain Control - Default=False (AGC off)
-    - crc: Boolean to Enable/Disable Cyclic Redundancy Check - Default=True (CRC Enabled)
+    - checksum: Boolean to Enable/Disable appending a two byte checksum - Default=True (checksum Enabled)
     Remember this library makes a best effort at receiving packets with pure
     Python code.  Trying to receive packets too quickly will result in lost data
     so limit yourself to simple scenarios of sending and receiving single
@@ -316,7 +317,7 @@ class RFM9x:
         bitrate=1200,
         frequency_deviation=5000,
         spi_baudrate=5000000,
-        crc=True
+        checksum=True
     ):
         self.high_power = high_power
         # Device support SPI mode 0 (polarity & phase = 0) up to a max of 10mhz.
@@ -364,7 +365,7 @@ class RFM9x:
 
         self.packet_format = 0b1  # variable length packets
         self.dc_free = 0b01  # Manchester coding
-        self.crc_on = crc
+        self.crc_on = 0b0  # turn off CRC  - it doesn't work
         self.crc_auto_clear = 0b1  # FIFO not cleared for packets that fail CRC
         self.crc_whitening = 0b0  # use CCITT CRC - IBM not supported (see errata)
         self.address_filtering = 0b00  # no address filtering - handled in software
@@ -425,7 +426,9 @@ class RFM9x:
            Lower 4 bits may be used to pass information.
            Fourth byte of the RadioHead header.
         """
-        self.crc_error_count = 0
+
+        self.checksum = checksum
+        self.checksum_error_count = 0
 
     # pylint: disable=no-member
     # Reconsider pylint: disable when this can be tested
@@ -686,8 +689,8 @@ class RFM9x:
         else:
             raise ValueError(f"RX bandwidth mantissa {mant_binary} invalid")
 
-        rxbw = _RH_RF95_FXOSC / (mant * (2**(exp+2)))
-        return rxbw/1000
+        rxbw = _RH_RF95_FXOSC / (mant * (2**(exp + 2)))
+        return rxbw / 1000
 
     @rx_bandwidth.setter
     def rx_bandwidth(self, val):
@@ -728,7 +731,7 @@ class RFM9x:
         flags=None
     ):
         """Send a string of data using the transmitter.
-        You can only send 252 bytes at a time
+        You can only send 57 bytes at a time
         (limited by chip's FIFO size and appended headers).
         This appends a 4 byte header to be compatible with the RadioHead library.
         The header defaults to using the initialized attributes:
@@ -745,7 +748,7 @@ class RFM9x:
         # efficient and proper way to ensure a precondition that the provided
         # buffer be within an expected range of bounds. Disable this check.
         # pylint: disable=len-as-condition
-        assert 0 < len(data) <= 59  # TODO: Allow longer packets, see pg 76
+        assert 0 < len(data) <= 57  # TODO: Allow longer packets, see pg 76
         # pylint: enable=len-as-condition
         self.idle()  # Stop receiving to clear FIFO and keep it clear.
 
@@ -770,6 +773,12 @@ class RFM9x:
             payload[4] = flags
 
         payload = payload + data
+
+        if self.checksum:
+            payload[0] += 2
+            checksum = bsd_checksum(payload)
+            payload = payload + checksum
+
         # Write payload.
         self._write_from(_RH_RF95_REG_00_FIFO, payload)
 
@@ -902,21 +911,9 @@ class RFM9x:
 
     def _process_packet(self, with_header=False, with_ack=False, debug=False):
 
-        # check for CRC error before reading data (flag is cleared when FIFO is read)
-        crc_error = False
-        if self.crc_on and not self.crc_ok():
-            crc_error = True
-
         # Read the data from the radio FIFO
         packet = bytearray(_MAX_FIFO_LENGTH)
         packet_length = self._read_until_flag(_RH_RF95_REG_00_FIFO, packet, self.fifo_empty)
-
-        # Reject if the packet did not pass the radio CRC
-        if crc_error:
-            if debug:
-                print(f"RFM9X: CRC Error, packet = {str(packet)}")
-            self.crc_error_count += 1
-            return None
 
         # Reject if the received packet is too small to include the 1 byte length, the
         # 4 byte RadioHead header and at least one byte of data
@@ -930,8 +927,24 @@ class RFM9x:
         if internal_packet_length != packet_length - 1:
             if debug:
                 print(
-                    f"RFM9X: Received packet length ({packet_length}) does not match transmitted packet length ({internal_packet_length}), packet = {str(packet)}")
+                    f"RFM9X: Received packet length ({packet_length}) " +
+                    f"does not match transmitted packet length ({internal_packet_length}), " +
+                    f"packet = {str(packet)}")
             return None
+
+        packet = packet[:packet_length]
+        # Reject if the packet does not pass the checksum
+        if self.checksum:
+            if not bsd_checksum(packet[:-2]) == packet[-2:]:
+                if debug:
+                    print(
+                        f"RFM9X: Checksum failed, packet = {str(packet)}, bsd_checksum(packet[:-2])" +
+                        f" = {bsd_checksum(packet[:-2])}, packet[-2:] = {packet[-2:]}")
+                self.checksum_error_count += 1
+                return None
+            else:
+                # passed the checksum - remove it before continuing
+                packet = packet[:-2]
 
         # Reject if the packet wasn't sent to my address
         if (self.node != _RH_BROADCAST_ADDRESS
@@ -971,3 +984,14 @@ class RFM9x:
             packet = packet[5:]
 
         return packet
+
+
+def bsd_checksum(bytedata):
+    """Very simple, not secure, but fast 2 byte checksum"""
+    checksum = 0
+
+    for b in bytedata:
+        checksum = (checksum >> 1) + ((checksum & 1) << 15)
+        checksum += b
+        checksum &= 0xffff
+    return bytes([checksum >> 8, checksum & 0xff])

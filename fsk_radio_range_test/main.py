@@ -113,6 +113,19 @@ board_str = get_input_discrete(
     ["s", "f", "p", "t", "r"]
 )
 
+
+def satellite_spi_config():
+    # pocketqube
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+
+    cs = digitalio.DigitalInOut(board.RF_CS)
+    reset = digitalio.DigitalInOut(board.RF_RST)
+    cs.switch_to_output(value=True)
+    reset.switch_to_output(value=True)
+
+    return spi, cs, reset
+
+
 def feather_spi_config():
     # feather
     spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
@@ -151,6 +164,7 @@ def rpigs_rx_spi_config():
 
     return spi, cs, reset
 
+
 if board_str == "s":
     spi, cs, reset = satellite_spi_config()
     print(f"{bold}{green}Satellite{normal} selected")
@@ -172,8 +186,6 @@ else:
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
 rfm9x = adafruit_rfm9x.RFM9x(spi, cs, reset, RADIO_FREQ_MHZ, crc=False)
-if board_str == "s":
-    rfm9x.dio0 = radio_DIO0
 
 node_str = get_input_discrete(
     f"Node {bold}A{normal} or {bold}B{normal}",
@@ -202,6 +214,7 @@ timeout = 10
 rfm9x.preamble_length = 16
 rfm9x.ack_delay = 0.2
 rfm9x.ack_wait = 5
+rfm9x.checksum = False
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
@@ -226,6 +239,8 @@ if param_str == "y":
                                                 [0.0, 100.0], allow_default=True)
     rfm9x.afc_enable = set_param_from_input_discrete(rfm9x.afc_enable, f"Enable automatic frequency calibration (AFC) (currently {rfm9x.afc_enable})",
                                                      ["0", "1"], allow_default=True)
+    rfm9x.checksum = set_param_from_input_discrete(rfm9x.checksum, f"Enable checksum (currently {rfm9x.checksum})",
+                                                   ["0", "1"], allow_default=True)
 
 print(f"{yellow}{bold}Radio Parameters:{normal}")
 print(f"\tNode addr = {rfm9x.node}\tDest addr = {rfm9x.destination}")
@@ -240,6 +255,7 @@ print(f"\tReceive timeout = {timeout} s")
 print(f"\tAcknowledge delay = {rfm9x.ack_delay} s")
 print(f"\tAcknowledge wait = {rfm9x.ack_wait} s")
 print(f"\tAFC enabled = {rfm9x.afc_enable}")
+print(f"\tChecksum enabled = {rfm9x.checksum}")
 
 while True:
 
