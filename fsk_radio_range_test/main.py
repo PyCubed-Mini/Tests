@@ -185,7 +185,7 @@ else:
 
 # Initialze RFM radio
 RADIO_FREQ_MHZ = 433.0
-rfm9x = adafruit_rfm9x.RFM9x(spi, cs, reset, RADIO_FREQ_MHZ, crc=False)
+rfm9x = adafruit_rfm9x.RFM9x(spi, cs, reset, RADIO_FREQ_MHZ)
 
 node_str = get_input_discrete(
     f"Node {bold}A{normal} or {bold}B{normal}",
