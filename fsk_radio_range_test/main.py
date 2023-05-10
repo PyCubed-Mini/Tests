@@ -214,7 +214,7 @@ timeout = 10
 rfm9x.preamble_length = 16
 rfm9x.ack_delay = 0.2
 rfm9x.ack_wait = 5
-rfm9x.checksum = False
+rfm9x.checksum = True
 
 if param_str == "y":
     rfm9x.frequency_mhz = set_param_from_input_range(rfm9x.frequency_mhz, f"Frequency (currently {rfm9x.frequency_mhz} MHz)",
@@ -260,7 +260,7 @@ print(f"\tChecksum enabled = {rfm9x.checksum}")
 while True:
 
     mode_str = get_input_discrete(
-        f"Operate in {bold}(r){normal}ecieve or {bold}(t){normal}ransmit mode?",
+        f"Operate in {bold}(r){normal}eceive or {bold}(t){normal}ransmit mode?",
         ["r", "t"])
 
     ack_str = get_input_discrete(
