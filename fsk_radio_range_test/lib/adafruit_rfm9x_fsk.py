@@ -893,8 +893,7 @@ class RFM9x:
                 self.listen()
 
             # check if we have timed out
-            if ((HAS_SUPERVISOR and (ticks_diff(supervisor.ticks_ms(), start) >= timeout * 1000))
-                    or
+            if ((HAS_SUPERVISOR and (ticks_diff(supervisor.ticks_ms(), start) >= timeout * 1000)) or
                     (not HAS_SUPERVISOR and (time.monotonic() - start >= timeout))):
                 # timed out
                 if debug:
@@ -947,22 +946,26 @@ class RFM9x:
                 packet = packet[:-2]
 
         # Reject if the packet wasn't sent to my address
-        if (self.node != _RH_BROADCAST_ADDRESS
-                and packet[1] != _RH_BROADCAST_ADDRESS
-                and packet[1] != self.node):
+        if (self.node != _RH_BROADCAST_ADDRESS and
+                packet[1] != _RH_BROADCAST_ADDRESS and
+                packet[1] != self.node):
             if debug:
                 print(
-                    f"RFM9X: Incorrect Address (packet address = {packet[1]} != my address = {self.node}, packet = {str(packet)}")
+                    "RFM9X: Incorrect Address " +
+                    f"(packet address = {packet[1]} != my address = {self.node}), " +
+                    f"packet = {str(packet)}")
             return None
 
         # send ACK unless this was an ACK or a broadcast
-        if (with_ack
-                and ((packet[4] & _RH_FLAGS_ACK) == 0)
-                and (packet[1] != _RH_BROADCAST_ADDRESS)):
+        if (with_ack and
+                ((packet[4] & _RH_FLAGS_ACK) == 0) and
+                (packet[1] != _RH_BROADCAST_ADDRESS)):
             # delay before sending Ack to give receiver a chance to get ready
             if self.ack_delay is not None:
                 time.sleep(self.ack_delay)
             # send ACK packet to sender (data is b'!')
+            if debug:
+                print("RFM9X: Sending ACK")
             self.send(
                 b"!",
                 destination=packet[2],
@@ -984,7 +987,6 @@ class RFM9x:
             packet = packet[5:]
 
         return packet
-
 
 def bsd_checksum(bytedata):
     """Very simple, not secure, but fast 2 byte checksum"""
