@@ -222,7 +222,7 @@ if param_str == "y":
     rfm9x.tx_power = set_param_from_input_discrete(rfm9x.tx_power, f"Power (currently {rfm9x.tx_power} dB)",
                                                    [f"{i}" for i in range(5, 24)], allow_default=True)
     rfm9x.bitrate = set_param_from_input_range(rfm9x.bitrate, f"Bitrate (currently {rfm9x.bitrate} bps)",
-                                               [(adafruit_rfm9x._RH_RF95_FXOSC // 0xFFFF), 300000], allow_default=True)
+                                               [int(adafruit_rfm9x._RH_RF95_FXOSC / 0xFFFF + 1), 300000], allow_default=True)
     rfm9x.frequency_deviation = set_param_from_input_range(rfm9x.frequency_deviation, f"Frequency deviation (currently {rfm9x.frequency_deviation})",
                                                            [600, 200000], allow_default=True)
     rfm9x.rx_bandwidth = set_param_from_input_discrete(rfm9x.rx_bandwidth, f"Receiver filter bandwidth (single-sided, currently {rfm9x.rx_bandwidth})",
