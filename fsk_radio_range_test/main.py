@@ -270,8 +270,6 @@ while True:
 
     if mode_str == "r":
         print(f"{bold}Receive{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
-        rfm9x.node = 0xAB  # our ID
-        rfm9x.destination = 0xBA  # target's ID
 
         print(f"\n{yellow}Receiving (CTRL-C to exit)...{normal}")
         while True:
@@ -295,8 +293,6 @@ while True:
 
     else:
         print(f"{bold}Transmit{normal} mode selected, {'with acknowledge' if ack else 'no acknowledge'}")
-        rfm9x.node = 0xBA  # our ID
-        rfm9x.destination = 0xAB  # target's ID
 
         while True:
             for i, msg in enumerate(messages):
