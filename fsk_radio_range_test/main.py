@@ -193,11 +193,16 @@ node_str = get_input_discrete(
 )
 
 if node_str == "A":
+    print("Node A")
     rfm9x.node = 0xAA
     rfm9x.destination = 0xBB
 else:
+    print("Node B")
     rfm9x.destination = 0xAA
     rfm9x.node = 0xBB
+
+print(f"\tNode addr = {rfm9x.node}\tDest addr = {rfm9x.destination}")
+
 
 # RFM radio configuration
 
